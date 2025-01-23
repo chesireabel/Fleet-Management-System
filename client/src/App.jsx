@@ -1,8 +1,16 @@
+import React from 'react';
+import {BrowserRouter as Router,Routes,Route} from 'react-router-dom'
+import LoginPage from './pages/LoginPage';
 function App() {
-
   return (
    <>
-  Lets start!
+  <Router>
+    <Routes>
+      <Route path="/"  element = {<LoginPage/>}></Route>
+
+    </Routes>
+    
+  </Router>
    </>
   )
 }
