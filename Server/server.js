@@ -1,18 +1,38 @@
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
+import dotenv from dotenv;
+
+import vehicleRoutes from './routes/vehicleRoutes.js';
+import driverRoutes from './routes/driverRoutes.js';
+import tripRoutes from './routes/tripRoutes.js';
+import locationRoutes from './routes/locationRoutes.js';
+import maintenanceRoutes from './routes/maintenanceRoutes.js';
+import reportAnalysisRoutes from './routes/reportAnalysisRoutes.js';
+import { errorHandler } from './middleware/errorMiddleware.js';
+
+dotenv.config();
 
 const app = express();
-
-const PORT =  3000;
-
-//MIDDLEWARE
 app.use(express.json());
 app.use(cors());
 
+
+const PORT =  process.env.PORT || 3000;
+
+
+
 //ROUTES
-app.get('/',(req,res) => {
-    res.json('Lets get started!');
-});
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/drivers', driverRoutes);
+app.use('/api/trips', tripRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/report-analyses', reportAnalysisRoutes);
+
+
+app.use(errorHandler);
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`)
