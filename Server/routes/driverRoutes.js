@@ -1,6 +1,6 @@
 import { Router } from 'express';
 const router = Router();
-import { createDriver, getDrivers, getDriverById } from '../controllers/driverController';
+import { createDriver, getDrivers, getDriverById } from '../controllers/driverController.js';
 
 // Route to create a new driver
 router.post('/', createDriver);

@@ -1,4 +1,4 @@
-import Vehicle from '../models/vehicle';
+import Vehicle from '../models/vehicle.js';
 
 // Create a new vehicle record
 export const createVehicle = async (req, res) => {

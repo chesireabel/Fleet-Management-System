@@ -1,4 +1,4 @@
-import ReportAnalysis from '../models/reportAnalysis';
+import ReportAnalysis from '../models/reportAnalysis.js';
 
 export const createReportAnalysis = async (req, res) => {
     try {

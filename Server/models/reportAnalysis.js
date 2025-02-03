@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
 
 const reportAnalysisSchema = new Schema({
-    reportType: { type: String, enum: ['Trip Summary', 'Maintenance Report', 'Fuel Efficiency'], required: true },
+    reportType: { type: String, enum: ['Trip Summary', 'Maintenance Report'], required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     totalTrips: { type: Number },

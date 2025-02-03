@@ -1,5 +1,5 @@
 import express from 'express';
-import { createMaintenance, getAllMaintenances, getMaintenanceByVehicle, updateMaintenance, deleteMaintenance } from '../controllers/maintenanceController';
+import { createMaintenance, getAllMaintenances, getMaintenanceByVehicle, updateMaintenance, deleteMaintenance } from '../controllers/maintenanceController.js';
 
 const router = express.Router();
 

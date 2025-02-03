@@ -1,5 +1,5 @@
 import express from 'express';
-import { createReportAnalysis, getAllReportAnalysis, getReportAnalysisById, updateReportAnalysis, deleteReportAnalysis } from '../controllers/reportAnalysisController';
+import { createReportAnalysis, getAllReportAnalysis, getReportAnalysisById, updateReportAnalysis, deleteReportAnalysis } from '../controllers/reportAnalysisController.js';
 
 const router = express.Router();
 

@@ -1,8 +1,8 @@
-import Trip from '../models/trip';
+import Trip from '../models/trip.js';
 
 export const createTrip = async (req, res) => {
     try {
-        const { vehicle, driver, startLocation, endLocation, startTime, distanceTraveled, fuelConsumption, gpsCoordinates } = req.body;
+        const { vehicle, driver, startLocation, endLocation, startTime, distanceTraveled, fuelConsumption } = req.body;
 
         const trip = new Trip({
             vehicle,
@@ -11,8 +11,7 @@ export const createTrip = async (req, res) => {
             endLocation,
             startTime,
             distanceTraveled,
-            fuelConsumption,
-            gpsCoordinates
+            fuelConsumption
         });
 
         await trip.save();
@@ -49,7 +48,7 @@ export const getTripById = async (req, res) => {
 export const updateTrip = async (req, res) => {
     try {
         const { tripId } = req.params;
-        const { endLocation, endTime, tripStatus, gpsCoordinates, fuelConsumption } = req.body;
+        const { endLocation, endTime, tripStatus, fuelConsumption } = req.body;
 
         const updatedTrip = await Trip.findByIdAndUpdate(
             tripId,

@@ -1,4 +1,4 @@
-import Location, { find } from '../models/location';
+import Location, { find } from '../models/location.js';
 
 export async function createLocation(req, res) {
     try {

@@ -1,4 +1,4 @@
-import MaintenanceRecord from '../models/maintenance';
+import MaintenanceRecord from '../models/maintainence.js';
 
 export const createMaintenance = async (req, res) => {
     try {

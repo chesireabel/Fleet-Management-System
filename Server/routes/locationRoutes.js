@@ -1,6 +1,6 @@
 import { Router } from 'express';
 const router = Router();
-import { createLocation, getLocations, getLocationByVehicle } from '../controllers/locationController';
+import { createLocation, getLocations, getLocationByVehicle } from '../controllers/locationController.js';
 
 // Route to create a new location entry (POST)
 router.post('/', createLocation);

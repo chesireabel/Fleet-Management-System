@@ -1,13 +1,11 @@
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
-import dotenv from dotenv;
 
 import vehicleRoutes from './routes/vehicleRoutes.js';
 import driverRoutes from './routes/driverRoutes.js';
 import tripRoutes from './routes/tripRoutes.js';
 import locationRoutes from './routes/locationRoutes.js';
-import maintenanceRoutes from './routes/maintenanceRoutes.js';
+import maintenanceRoutes from './routes/maintenaceRoutes.js';
 import reportAnalysisRoutes from './routes/reportAnalysisRoutes.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 
