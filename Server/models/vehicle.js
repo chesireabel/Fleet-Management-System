@@ -13,14 +13,9 @@ const vehicleSchema = new mongoose.Schema({
         insuranceProvider: { type: String, required: true },
         expiryDate: { type: Date, required: true }
     },
-    assignedDriver: { type: mongoose.Schema.Types.ObjectId, ref: 'Driver' },
     activeStatus: { type: Boolean, default: true },
     lastServiceDate: { type: Date },
     nextServiceDate: { type: Date },
-    gpsCoordinates: {
-        latitude: { type: Number },
-        longitude: { type: Number }
-    },
     vehicleHealth: { type: String, enum: ['Excellent', 'Good', 'Fair', 'Poor'], default: 'Good' },
     createdAt: { type: Date, default: Date.now },
 
