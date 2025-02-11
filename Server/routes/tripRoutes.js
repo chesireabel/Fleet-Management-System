@@ -1,16 +1,28 @@
 import express from 'express';
-import { createTrip, getAllTrips, getTripById, updateTrip, deleteTrip } from '../controllers/tripController.js';
+import {
+    createTrip,
+    getAllTrips,
+    getTripById,
+    updateTrip,
+    deleteTrip,
+    validateTrip,
+} from '../controllers/tripController.js';
 
 const router = express.Router();
 
-router.post('/', createTrip);
+// Create a new trip
+router.post('/', validateTrip, createTrip);
 
+// Get all trips
 router.get('/', getAllTrips);
 
-router.get('/:tripId', getTripById);
+// Get a specific trip by ID
+router.get('/trips/:tripId', getTripById);
 
-router.put('/:tripId', updateTrip);
+// Update a trip by ID
+router.patch('/:tripId', validateTrip, updateTrip);
 
+// Delete a trip by ID
 router.delete('/:tripId', deleteTrip);
 
 export default router;
