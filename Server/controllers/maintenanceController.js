@@ -1,7 +1,25 @@
+import { body, param, validationResult } from 'express-validator';
 import MaintenanceRecord from '../models/maintainence.js';
+
+// Middleware to validate request data
+export const validateMaintenance = [
+    body('vehicle').notEmpty().withMessage('Vehicle ID is required'),
+    body('serviceType').notEmpty().withMessage('Service type is required'),
+    body('serviceDate').isISO8601().withMessage('Invalid service date'),
+    body('nextServiceDate').optional().isISO8601().withMessage('Invalid next service date'),
+    body('serviceCenter').optional().isString().withMessage('Service center must be a string'),
+    body('notes').optional().isString().withMessage('Notes must be a string'),
+    body('cost').optional().isNumeric().withMessage('Cost must be a number'),
+];
 
 export const createMaintenance = async (req, res) => {
     try {
+        // Validate request body
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const { vehicle, serviceType, serviceDate, nextServiceDate, serviceCenter, notes, cost } = req.body;
 
         const maintenance = new MaintenanceRecord({
@@ -11,11 +29,11 @@ export const createMaintenance = async (req, res) => {
             nextServiceDate,
             serviceCenter,
             notes,
-            cost
+            cost,
         });
 
         await maintenance.save();
-        res.status(201).json(maintenance);  
+        res.status(201).json(maintenance);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -23,8 +41,27 @@ export const createMaintenance = async (req, res) => {
 
 export const getAllMaintenances = async (req, res) => {
     try {
-        const maintenances = await MaintenanceRecord.find().populate('vehicle');  
-        res.status(200).json(maintenances); 
+        // Pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const maintenances = await MaintenanceRecord.find()
+            .populate('vehicle')
+            .skip(skip)
+            .limit(limit);
+
+        const totalRecords = await MaintenanceRecord.countDocuments();
+
+        res.status(200).json({
+            data: maintenances,
+            pagination: {
+                page,
+                limit,
+                totalRecords,
+                totalPages: Math.ceil(totalRecords / limit),
+            },
+        });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -32,15 +69,39 @@ export const getAllMaintenances = async (req, res) => {
 
 export const getMaintenanceByVehicle = async (req, res) => {
     try {
+        // Validate vehicleId parameter
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const { vehicleId } = req.params;
 
-        const maintenances = await MaintenanceRecord.find({ vehicle: vehicleId }).populate('vehicle');
+        // Pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const maintenances = await MaintenanceRecord.find({ vehicle: vehicleId })
+            .populate('vehicle')
+            .skip(skip)
+            .limit(limit);
+
+        const totalRecords = await MaintenanceRecord.countDocuments({ vehicle: vehicleId });
 
         if (!maintenances || maintenances.length === 0) {
             return res.status(404).json({ message: 'No maintenance records found for this vehicle' });
         }
 
-        res.status(200).json(maintenances);  
+        res.status(200).json({
+            data: maintenances,
+            pagination: {
+                page,
+                limit,
+                totalRecords,
+                totalPages: Math.ceil(totalRecords / limit),
+            },
+        });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -48,20 +109,26 @@ export const getMaintenanceByVehicle = async (req, res) => {
 
 export const updateMaintenance = async (req, res) => {
     try {
+        // Validate request body and parameters
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const { maintenanceId } = req.params;
         const { serviceType, serviceDate, nextServiceDate, serviceCenter, notes, cost } = req.body;
 
         const updatedMaintenance = await MaintenanceRecord.findByIdAndUpdate(
             maintenanceId,
             { serviceType, serviceDate, nextServiceDate, serviceCenter, notes, cost },
-            { new: true }  
+            { new: true }
         );
 
         if (!updatedMaintenance) {
             return res.status(404).json({ message: 'Maintenance record not found' });
         }
 
-        res.status(200).json(updatedMaintenance); 
+        res.status(200).json(updatedMaintenance);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -69,6 +136,12 @@ export const updateMaintenance = async (req, res) => {
 
 export const deleteMaintenance = async (req, res) => {
     try {
+        // Validate maintenanceId parameter
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const { maintenanceId } = req.params;
 
         const deletedMaintenance = await MaintenanceRecord.findByIdAndDelete(maintenanceId);
