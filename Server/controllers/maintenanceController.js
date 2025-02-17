@@ -1,9 +1,16 @@
 import { body, param, validationResult } from 'express-validator';
 import MaintenanceRecord from '../models/maintainence.js';
+import logger from '../utils/logger.js'; 
 
-// Middleware to validate request data
+// Utility function to handle errors
+const handleError = (res, error, statusCode = 400) => {
+    logger.error(error.message); // Log the error
+    res.status(statusCode).json({ success: false, error: error.message });
+};
+
+// Validation middleware for maintenance records
 export const validateMaintenance = [
-    body('vehicle').notEmpty().withMessage('Vehicle ID is required'),
+    body('vehicle').notEmpty().withMessage('Vehicle ID is required').isMongoId().withMessage('Invalid Vehicle ID'),
     body('serviceType').notEmpty().withMessage('Service type is required'),
     body('serviceDate').isISO8601().withMessage('Invalid service date'),
     body('nextServiceDate').optional().isISO8601().withMessage('Invalid next service date'),
@@ -12,12 +19,19 @@ export const validateMaintenance = [
     body('cost').optional().isNumeric().withMessage('Cost must be a number'),
 ];
 
+// Validation middleware for IDs
+export const validateId = [
+    param('vehicleId').optional().isMongoId().withMessage('Invalid Vehicle ID'),
+    param('maintenanceId').optional().isMongoId().withMessage('Invalid Maintenance ID'),
+];
+
+// Create a maintenance record
 export const createMaintenance = async (req, res) => {
     try {
         // Validate request body
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success: false, errors: errors.array() });
         }
 
         const { vehicle, serviceType, serviceDate, nextServiceDate, serviceCenter, notes, cost } = req.body;
@@ -33,12 +47,14 @@ export const createMaintenance = async (req, res) => {
         });
 
         await maintenance.save();
-        res.status(201).json(maintenance);
+        logger.info(`Maintenance record created for vehicle: ${vehicle}`);
+        res.status(201).json({ success: true, data: maintenance });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        handleError(res, err);
     }
 };
 
+// Get all maintenance records with pagination
 export const getAllMaintenances = async (req, res) => {
     try {
         // Pagination
@@ -54,6 +70,7 @@ export const getAllMaintenances = async (req, res) => {
         const totalRecords = await MaintenanceRecord.countDocuments();
 
         res.status(200).json({
+            success: true,
             data: maintenances,
             pagination: {
                 page,
@@ -63,16 +80,17 @@ export const getAllMaintenances = async (req, res) => {
             },
         });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        handleError(res, err);
     }
 };
 
+// Get maintenance records by vehicle ID
 export const getMaintenanceByVehicle = async (req, res) => {
     try {
-        // Validate vehicleId parameter
+        // Validate request parameters
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success: false, errors: errors.array() });
         }
 
         const { vehicleId } = req.params;
@@ -90,10 +108,11 @@ export const getMaintenanceByVehicle = async (req, res) => {
         const totalRecords = await MaintenanceRecord.countDocuments({ vehicle: vehicleId });
 
         if (!maintenances || maintenances.length === 0) {
-            return res.status(404).json({ message: 'No maintenance records found for this vehicle' });
+            return res.status(404).json({ success: false, message: 'No maintenance records found for this vehicle' });
         }
 
         res.status(200).json({
+            success: true,
             data: maintenances,
             pagination: {
                 page,
@@ -103,16 +122,17 @@ export const getMaintenanceByVehicle = async (req, res) => {
             },
         });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        handleError(res, err);
     }
 };
 
+// Update a maintenance record
 export const updateMaintenance = async (req, res) => {
     try {
         // Validate request body and parameters
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success: false, errors: errors.array() });
         }
 
         const { maintenanceId } = req.params;
@@ -125,21 +145,23 @@ export const updateMaintenance = async (req, res) => {
         );
 
         if (!updatedMaintenance) {
-            return res.status(404).json({ message: 'Maintenance record not found' });
+            return res.status(404).json({ success: false, message: 'Maintenance record not found' });
         }
 
-        res.status(200).json(updatedMaintenance);
+        logger.info(`Maintenance record updated: ${maintenanceId}`);
+        res.status(200).json({ success: true, data: updatedMaintenance });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        handleError(res, err);
     }
 };
 
+// Delete a maintenance record
 export const deleteMaintenance = async (req, res) => {
     try {
-        // Validate maintenanceId parameter
+        // Validate request parameters
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success: false, errors: errors.array() });
         }
 
         const { maintenanceId } = req.params;
@@ -147,11 +169,12 @@ export const deleteMaintenance = async (req, res) => {
         const deletedMaintenance = await MaintenanceRecord.findByIdAndDelete(maintenanceId);
 
         if (!deletedMaintenance) {
-            return res.status(404).json({ message: 'Maintenance record not found' });
+            return res.status(404).json({ success: false, message: 'Maintenance record not found' });
         }
 
-        res.status(200).json({ message: 'Maintenance record deleted successfully' });
+        logger.info(`Maintenance record deleted: ${maintenanceId}`);
+        res.status(200).json({ success: true, message: 'Maintenance record deleted successfully' });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        handleError(res, err);
     }
 };

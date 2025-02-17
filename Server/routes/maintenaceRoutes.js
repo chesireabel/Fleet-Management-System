@@ -1,20 +1,21 @@
 import express from 'express';
 import {
+    validateMaintenance,
+    validateId,
     createMaintenance,
     getAllMaintenances,
     getMaintenanceByVehicle,
     updateMaintenance,
     deleteMaintenance,
-    validateMaintenance,
 } from '../controllers/maintenanceController.js';
 
 const router = express.Router();
 
-// Routes (without authentication)
+// Routes
 router.post('/', validateMaintenance, createMaintenance);
 router.get('/', getAllMaintenances);
-router.get('/vehicle/:vehicleId', getMaintenanceByVehicle);
-router.put('/:maintenanceId', validateMaintenance, updateMaintenance);
-router.delete('/:maintenanceId', deleteMaintenance);
+router.get('/vehicle/:vehicleId', validateId, getMaintenanceByVehicle);
+router.put('/:maintenanceId', validateId, validateMaintenance, updateMaintenance);
+router.delete('/:maintenanceId', validateId, deleteMaintenance);
 
 export default router;
