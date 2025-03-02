@@ -113,7 +113,7 @@ function Signup() {
   // Close the modal and redirect to the landing page
   const closeModal = () => {
     setIsModalOpen(false);
-    navigate('/'); // Redirect to the landing page
+    navigate('/login'); // Redirect to the landing page
   };
 
   return (
