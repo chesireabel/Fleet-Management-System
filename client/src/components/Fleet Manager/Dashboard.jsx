@@ -1,5 +1,4 @@
 import React from 'react';
-
 const Dashboard = () => {
   return (
     <div>
@@ -12,6 +11,7 @@ const Dashboard = () => {
         <p>Under Maintenance: 5</p>
       </div>
     </div>
+    
   );
 };
 

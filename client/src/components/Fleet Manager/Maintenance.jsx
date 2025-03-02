@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-bootstrap/Modal';
-import 'bootstrap/dist/css/bootstrap.min.css'; // Ensure Bootstrap CSS is imported
+import 'bootstrap/dist/css/bootstrap.min.css'; 
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Maintenance = () => {
   const [records, setRecords] = useState([]);

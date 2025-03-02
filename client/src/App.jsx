@@ -7,6 +7,7 @@ import LandingPage from "./pages/landing.jsx";
 import Login from "./pages/login.jsx";
 import Signup from "./pages/signup.jsx";
 import ManagerSidebar from "./components/Fleet Manager/ManagerSidebar.jsx";
+import Layout from "./components/layout.jsx";
 
 
 
@@ -15,6 +16,7 @@ import ManagerSidebar from "./components/Fleet Manager/ManagerSidebar.jsx";
 function App() {
   return (
   <Router>
+   
     <Routes>
       <Route path="/" element={<LandingPage/>}/>
       <Route path="/login" element={<Login/>}/>
@@ -24,7 +26,10 @@ function App() {
       path="/manager"
       element ={<ManagerSidebar/>}> 
       </Route>
+      <Route path="/driver"
+      element = {<ManagerSidebar/>}/>
     </Routes>
+   
   </Router>
   )
 }

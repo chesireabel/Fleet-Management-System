@@ -63,7 +63,7 @@ function Login() {
         localStorage.setItem('token', response.data.token);
 
         // Redirect to the dashboard or home page
-        navigate('/dashboard');
+        navigate('/manager');
       } catch (error) {
         console.error('Login failed:', error.response?.data || error.message);
 

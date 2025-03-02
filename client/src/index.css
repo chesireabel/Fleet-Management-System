@@ -1,3 +1,16 @@
+/* Reset margins and paddings for all elements */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure body and html have no spacing */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
 /* Custom Modal Sizing */
 .modal-dialog {
     transition: all 0.3s ease;
@@ -45,4 +58,14 @@
   
   .modal-body::-webkit-scrollbar-thumb:hover {
     background: #666;
+  }
+
+  .input-group:focus-within {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    transition: all 0.2s ease;
+  }
+  
+  .input-group:hover {
+    border-color: #86b7fe;
   }

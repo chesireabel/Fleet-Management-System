@@ -65,7 +65,7 @@ const Vehicles = () => {
   return (
     <div className="container-fluid p-3">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="h4 mb-0">Vehicle Management</h2>
+        <h2 className="h4 mb-0">Vehicle Management</h2>      
         <button
           className="btn bg-primary text-white btn-sm px-2 py-1" 
           onClick={() => {
