@@ -25,8 +25,14 @@ export const createDriver = async (req, res) => {
             });
         }
 
+        const driverData = {
+            ...req.body,
+            profilePicture: req.file ? `/uploads/${req.file.filename}` : "" // Save image path
+        };
+
+
         // Create a new driver document
-        const driver = new Driver(req.body);
+        const driver = new Driver(driverData);
         await driver.save();
 
         // Return the created driver

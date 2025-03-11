@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import mongoose, { Schema, model } from 'mongoose';
 
 const tripSchema = new Schema({
     vehicle: { type: Schema.Types.ObjectId, ref: 'Vehicle', required: true },
@@ -15,60 +15,68 @@ const tripSchema = new Schema({
             message: "End time must be after start time."
         }
     },
-    distanceTraveled: { type: Number, required: true, min: 0 }, // Prevent negative values
-    fuelConsumption: { type: Number, min: 0, default: 0 }, // Optional but must be non-negative
+    distanceTraveled: { type: Number, required: true, min: 0 }, 
+    fuelConsumption: { 
+        type: Number, 
+        min: 0, 
+        default: 0, 
+        validate: {
+            validator: function(value) {
+                return !(this.distanceTraveled === 0 && value > 0);
+            },
+            message: "Fuel consumption cannot be positive if distance traveled is zero."
+        }
+    },
     tripStatus: { 
         type: String, 
-        enum: {
-            values: ['Completed', 'In Progress', 'Cancelled'],
-            message: 'Trip status must be either "Completed", "In Progress", or "Cancelled".'
-        },
+        enum: ['Completed', 'In Progress', 'Cancelled'],
         default: 'In Progress' 
     },
 }, { 
-    timestamps: true, // Automatically adds `createdAt` and `updatedAt`
-    toJSON: { virtuals: true }, // Include virtuals in JSON responses
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
-// Indexes for frequently queried fields
+// Indexes for optimized queries
 tripSchema.index({ vehicle: 1 });
 tripSchema.index({ driver: 1 });
 tripSchema.index({ startTime: 1 });
 
 // Virtual for trip duration
 tripSchema.virtual('duration').get(function() {
-    if (this.startTime && this.endTime) {
-        return this.endTime - this.startTime; // Duration in milliseconds
-    }
-    return null;
+    return this.startTime && this.endTime ? this.endTime - this.startTime : null;
 });
 
-// Pre-save hook to validate endTime
+// Pre-save hooks for validation
 tripSchema.pre('save', function(next) {
     if (this.endTime && this.endTime <= this.startTime) {
-        next(new Error('End time must be after start time.'));
-    } else {
-        next();
+        return next(new Error('End time must be after start time.'));
     }
+    next();
 });
 
-// Pre-save hook to validate vehicle and driver IDs
 tripSchema.pre('save', async function(next) {
-    const Vehicle = model('Vehicle');
-    const Driver = model('Driver');
+    const Vehicle = mongoose.model('Vehicle');
+    const Driver = mongoose.model('Driver');
 
-    const vehicleExists = await Vehicle.exists({ _id: this.vehicle });
-    const driverExists = await Driver.exists({ _id: this.driver });
-
-    if (!vehicleExists) {
-        next(new Error('Invalid vehicle ID.'));
-    } else if (!driverExists) {
-        next(new Error('Invalid driver ID.'));
-    } else {
-        next();
+    if (!mongoose.Types.ObjectId.isValid(this.vehicle)) {
+        return next(new Error('Invalid vehicle ID format.'));
     }
+    if (!mongoose.Types.ObjectId.isValid(this.driver)) {
+        return next(new Error('Invalid driver ID format.'));
+    }
+
+    const [vehicleExists, driverExists] = await Promise.all([
+        Vehicle.exists({ _id: this.vehicle }),
+        Driver.exists({ _id: this.driver })
+    ]);
+
+    if (!vehicleExists) return next(new Error('Vehicle ID not found.'));
+    if (!driverExists) return next(new Error('Driver ID not found.'));
+    
+    next();
 });
 
 const Trip = model('Trip', tripSchema);
-
 export default Trip;

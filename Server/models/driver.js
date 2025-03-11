@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const driverSchema = new mongoose.Schema({
+    profilePicture: { 
+        type: String,
+        default: "" 
+    },
+  
     firstName: { 
         type: String, 
         required: [true, 'First name is required'],

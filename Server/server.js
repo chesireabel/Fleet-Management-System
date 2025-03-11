@@ -17,8 +17,13 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors()); // Enable CORS
-app.use(express.json()); // Parse JSON request bodies
+app.use(cors({
+    origin: "http://localhost:5173", 
+    methods: "GET,POST,PUT,DELETE",
+    credentials: true
+  }));
+
+  app.use(express.json()); // Parse JSON request bodies
 
 // Database connection
 connectDB();
@@ -29,6 +34,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
+app.use('/uploads', express.static('uploads'));
 app.use('/users', userRoutes);
 app.use('/vehicles', vehicleRoutes);
 app.use('/drivers', driverRoutes);

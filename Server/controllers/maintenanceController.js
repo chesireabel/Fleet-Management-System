@@ -1,6 +1,5 @@
 import { body, param, validationResult } from 'express-validator';
 import MaintenanceRecord from '../models/maintainence.js';
-import logger from '../utils/logger.js'; 
 
 // Utility function to handle errors
 const handleError = (res, error, statusCode = 400) => {

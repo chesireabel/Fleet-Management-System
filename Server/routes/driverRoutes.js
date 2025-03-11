@@ -1,4 +1,5 @@
 import express from 'express';
+import upload from '../config/multer.js';
 import {
     createDriver,
     getAllDrivers,
@@ -11,7 +12,7 @@ import {
 const router = express.Router();
 
 // Route to create a new driver
-router.post('/', validateDriver, createDriver);
+router.post('/', upload.single("profilePicture"),validateDriver, createDriver);
 
 // Route to get all drivers (with pagination)
 router.get('/', getAllDrivers);
