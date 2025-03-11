@@ -6,7 +6,10 @@ import { CSpinner } from '@coreui/react'
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Vehicles = React.lazy(() => import('./views/dashboard/Vehicle'))
 const VehicleTracker = React.lazy(() => import('./views/dashboard/VehicleTracker'))
+const Trips = React.lazy(() => import('./views/dashboard/tripsAssign'))
 const Drivers = React.lazy(() => import('./views/dashboard/Drivers'))
+const DriverPage = React.lazy(() => import('./views/pages/DriverPage'));
+
 const Maintenance = React.lazy(() => import('./views/dashboard/maintenance'))
 const Reports = React.lazy(() => import('./views/dashboard/reports'))
 
@@ -40,9 +43,19 @@ const routes = [
     element: withSuspense(VehicleTracker)
   },
   { 
+    path: '/trips',
+    name: 'Trips',
+    element: withSuspense(Trips)
+  },
+  { 
     path: '/drivers',
     name: 'Drivers',
     element: withSuspense(Drivers)
+  },
+  { 
+    path: '/driver', 
+    name: 'Driver Dashboard',
+    element: withSuspense(DriverPage)
   },
   { 
     path: '/maintenance',

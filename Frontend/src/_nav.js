@@ -30,7 +30,13 @@ const _nav = [
     icon: <CIcon icon={cilLocationPin} customClassName="nav-icon" />,
     
   },
-
+  {
+    component: CNavItem,
+    name: 'Trips',
+    to: '/trips',
+    icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
+    
+  },
   {
     component: CNavItem,
     name: 'Drivers',

@@ -140,7 +140,7 @@ const Vehicles = () => {
                       <CTableHeaderCell style={{ width: '40px' }}></CTableHeaderCell>
                       <CTableHeaderCell>Registration</CTableHeaderCell>
                       <CTableHeaderCell>Make</CTableHeaderCell>
-                      <CTableHeaderCell>Type</CTableHeaderCell>
+                      <CTableHeaderCell> Vehicle Type</CTableHeaderCell>
                       <CTableHeaderCell>Status</CTableHeaderCell>
                       <CTableHeaderCell>Actions</CTableHeaderCell>
                     </CTableRow>
@@ -215,16 +215,32 @@ const Vehicles = () => {
                                     <div>{vehicle.year}</div>
                                   </CCol>
                                   <CCol md={3}>
-                                    <strong>Mileage:</strong> 
-                                    <div>{vehicle.mileage}</div>
+                                    <strong>Vehicle Type:</strong> 
+                                    <div>{vehicle.vehicleType}</div>
                                   </CCol>
                                   <CCol md={3}>
-                                    <strong>Capacity:</strong> 
-                                    <div>{vehicle.capacity}</div>
+                                    <strong>Fuel Type:</strong> 
+                                    <div>{vehicle.fuelType}</div>
                                   </CCol>
                                   <CCol md={3}>
-                                    <strong>Last Service:</strong> 
-                                    <div>{vehicle.lastServiceDate || 'N/A'}</div>
+                                    <strong>Odometer:</strong> 
+                                    <div>{vehicle.odometerReading}</div>
+                                  </CCol>
+                                  <CCol md={3}>
+                                    <strong>Vehicle Health:</strong> 
+                                    <div>{vehicle.vehicleHealth || 'N/A'}</div>
+                                  </CCol>
+                                  <CCol md={3}>
+                                    <strong>Policy Number:</strong> 
+                                    <div>{vehicle.insuranceDetails.policyNumber || 'N/A'}</div>
+                                  </CCol>
+                                  <CCol md={3}>
+                                    <strong>Insurance Provider:</strong> 
+                                    <div>{vehicle.insuranceDetails.insuranceProvider || 'N/A'}</div>
+                                  </CCol>
+                                  <CCol md={3}>
+                                    <strong>Expiry Date:</strong> 
+                                    <div>{vehicle.insuranceDetails.expiryDate || 'N/A'}</div>
                                   </CCol>
                                   <CCol md={12} className="mt-3">
                                     {vehicle.image && (
