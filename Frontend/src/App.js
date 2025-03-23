@@ -4,10 +4,17 @@ import { useSelector } from 'react-redux';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
-import routes from './routes';
+import routes from './routes.js';
 
-const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
+
+
+
+const LandingPage = React.lazy(() => import('./views/pages/landingPage'));
+const Login = React.lazy(() => import('./views/pages/login'));
+const Signup = React.lazy(() => import('./views/pages/signup'));
 const DriverPage = React.lazy(() => import('./views/pages/DriverPage'));
+const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
+
 
 
 const App = () => {
@@ -37,13 +44,16 @@ const App = () => {
         >
           <Routes>
             {/* Routes that should NOT use DefaultLayout */}
-            <Route path="/driver" element={<DriverPage />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login/>} />
+            <Route path="/signup" element={<Signup/>} />
+            <Route path="/driver/*" element={<DriverPage />} />
 
             {/* Routes that SHOULD use DefaultLayout */}
             <Route element={<DefaultLayout />}>
               {routes
-                .filter((route) => route.path !== '/driver') // Exclude /driver from DefaultLayout
-                .map((route, idx) =>
+                 .filter(route => !['/', '/login','/signup','/driver'].includes(route.path)) 
+                 .map((route, idx) =>
                   route.index ? (
                     <Route 
                       index

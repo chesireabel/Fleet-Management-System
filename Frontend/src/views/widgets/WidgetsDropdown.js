@@ -13,7 +13,7 @@ import {
 import { getStyle } from '@coreui/utils'
 import { CChartBar, CChartLine } from '@coreui/react-chartjs'
 import CIcon from '@coreui/icons-react'
-import { cilArrowBottom, cilArrowTop, cilOptions } from '@coreui/icons'
+import { cilArrowBottom, cilArrowTop, cilOptions, cilTruck, cilSpeedometer, cilSettings } from '@coreui/icons'
 
 const WidgetsDropdown = (props) => {
   const widgetChartRef1 = useRef(null)
@@ -44,23 +44,21 @@ const WidgetsDropdown = (props) => {
           color="primary"
           value={
             <>
-              26K{' '}
+              20{' '}
               <span className="fs-6 fw-normal">
-                (-12.4% <CIcon icon={cilArrowBottom} />)
+                (-5.2% <CIcon icon={cilArrowBottom} />)
               </span>
             </>
           }
-          title="Users"
+          title="Active Vehicles"
           action={
             <CDropdown alignment="end">
               <CDropdownToggle color="transparent" caret={false} className="text-white p-0">
                 <CIcon icon={cilOptions} />
               </CDropdownToggle>
               <CDropdownMenu>
-                <CDropdownItem>Action</CDropdownItem>
-                <CDropdownItem>Another action</CDropdownItem>
-                <CDropdownItem>Something else here...</CDropdownItem>
-                <CDropdownItem disabled>Disabled action</CDropdownItem>
+                <CDropdownItem>View Details</CDropdownItem>
+                <CDropdownItem>Export Data</CDropdownItem>
               </CDropdownMenu>
             </CDropdown>
           }
@@ -73,11 +71,11 @@ const WidgetsDropdown = (props) => {
                 labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
                 datasets: [
                   {
-                    label: 'My First dataset',
+                    label: 'Active Vehicles',
                     backgroundColor: 'transparent',
                     borderColor: 'rgba(255,255,255,.55)',
                     pointBackgroundColor: getStyle('--cui-primary'),
-                    data: [65, 59, 84, 84, 51, 55, 40],
+                    data: [110, 115, 120, 118, 125, 120, 115],
                   },
                 ],
               }}
@@ -102,8 +100,8 @@ const WidgetsDropdown = (props) => {
                     },
                   },
                   y: {
-                    min: 30,
-                    max: 89,
+                    min: 100,
+                    max: 130,
                     display: false,
                     grid: {
                       display: false,
@@ -134,23 +132,21 @@ const WidgetsDropdown = (props) => {
           color="info"
           value={
             <>
-              $6.200{' '}
+              1,200 L{' '}
               <span className="fs-6 fw-normal">
-                (40.9% <CIcon icon={cilArrowTop} />)
+                (12.3% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
-          title="Income"
+          title="Fuel Consumption"
           action={
             <CDropdown alignment="end">
               <CDropdownToggle color="transparent" caret={false} className="text-white p-0">
                 <CIcon icon={cilOptions} />
               </CDropdownToggle>
               <CDropdownMenu>
-                <CDropdownItem>Action</CDropdownItem>
-                <CDropdownItem>Another action</CDropdownItem>
-                <CDropdownItem>Something else here...</CDropdownItem>
-                <CDropdownItem disabled>Disabled action</CDropdownItem>
+                <CDropdownItem>View Details</CDropdownItem>
+                <CDropdownItem>Export Data</CDropdownItem>
               </CDropdownMenu>
             </CDropdown>
           }
@@ -163,11 +159,11 @@ const WidgetsDropdown = (props) => {
                 labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
                 datasets: [
                   {
-                    label: 'My First dataset',
+                    label: 'Fuel Consumption',
                     backgroundColor: 'transparent',
                     borderColor: 'rgba(255,255,255,.55)',
                     pointBackgroundColor: getStyle('--cui-info'),
-                    data: [1, 18, 9, 17, 34, 22, 11],
+                    data: [1000, 1100, 1200, 1150, 1250, 1300, 1200],
                   },
                 ],
               }}
@@ -192,8 +188,8 @@ const WidgetsDropdown = (props) => {
                     },
                   },
                   y: {
-                    min: -9,
-                    max: 39,
+                    min: 900,
+                    max: 1400,
                     display: false,
                     grid: {
                       display: false,
@@ -223,23 +219,21 @@ const WidgetsDropdown = (props) => {
           color="warning"
           value={
             <>
-              2.49%{' '}
+              45,000 km{' '}
               <span className="fs-6 fw-normal">
-                (84.7% <CIcon icon={cilArrowTop} />)
+                (8.7% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
-          title="Conversion Rate"
+          title="Total Mileage"
           action={
             <CDropdown alignment="end">
               <CDropdownToggle color="transparent" caret={false} className="text-white p-0">
                 <CIcon icon={cilOptions} />
               </CDropdownToggle>
               <CDropdownMenu>
-                <CDropdownItem>Action</CDropdownItem>
-                <CDropdownItem>Another action</CDropdownItem>
-                <CDropdownItem>Something else here...</CDropdownItem>
-                <CDropdownItem disabled>Disabled action</CDropdownItem>
+                <CDropdownItem>View Details</CDropdownItem>
+                <CDropdownItem>Export Data</CDropdownItem>
               </CDropdownMenu>
             </CDropdown>
           }
@@ -251,10 +245,10 @@ const WidgetsDropdown = (props) => {
                 labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
                 datasets: [
                   {
-                    label: 'My First dataset',
+                    label: 'Total Mileage',
                     backgroundColor: 'rgba(255,255,255,.2)',
                     borderColor: 'rgba(255,255,255,.55)',
-                    data: [78, 81, 80, 45, 34, 12, 40],
+                    data: [40000, 41000, 42000, 43000, 44000, 45000, 46000],
                     fill: true,
                   },
                 ],
@@ -295,23 +289,21 @@ const WidgetsDropdown = (props) => {
           color="danger"
           value={
             <>
-              44K{' '}
+              5{' '}
               <span className="fs-6 fw-normal">
-                (-23.6% <CIcon icon={cilArrowBottom} />)
+                (-2.1% <CIcon icon={cilArrowBottom} />)
               </span>
             </>
           }
-          title="Sessions"
+          title="Under Maintenance"
           action={
             <CDropdown alignment="end">
               <CDropdownToggle color="transparent" caret={false} className="text-white p-0">
                 <CIcon icon={cilOptions} />
               </CDropdownToggle>
               <CDropdownMenu>
-                <CDropdownItem>Action</CDropdownItem>
-                <CDropdownItem>Another action</CDropdownItem>
-                <CDropdownItem>Something else here...</CDropdownItem>
-                <CDropdownItem disabled>Disabled action</CDropdownItem>
+                <CDropdownItem>View Details</CDropdownItem>
+                <CDropdownItem>Export Data</CDropdownItem>
               </CDropdownMenu>
             </CDropdown>
           }
@@ -333,17 +325,13 @@ const WidgetsDropdown = (props) => {
                   'October',
                   'November',
                   'December',
-                  'January',
-                  'February',
-                  'March',
-                  'April',
                 ],
                 datasets: [
                   {
-                    label: 'My First dataset',
+                    label: 'Under Maintenance',
                     backgroundColor: 'rgba(255,255,255,.2)',
                     borderColor: 'rgba(255,255,255,.55)',
-                    data: [78, 81, 80, 45, 34, 12, 40, 85, 65, 23, 12, 98, 34, 84, 67, 82],
+                    data: [3, 4, 5, 6, 5, 4, 3, 4, 5, 6, 5, 4],
                     barPercentage: 0.6,
                   },
                 ],

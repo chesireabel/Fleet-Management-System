@@ -1,6 +1,5 @@
 import React from 'react'
 import classNames from 'classnames'
-
 import {
   CAvatar,
   CButton,
@@ -21,26 +20,13 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
-  cibCcAmex,
-  cibCcApplePay,
-  cibCcMastercard,
-  cibCcPaypal,
-  cibCcStripe,
-  cibCcVisa,
-  cibGoogle,
-  cibFacebook,
-  cibLinkedin,
-  cifBr,
-  cifEs,
-  cifFr,
-  cifIn,
-  cifPl,
-  cifUs,
-  cibTwitter,
-  cilCloudDownload,
-  cilPeople,
+  cilTruck,
+  cilSettings, // Replace cilWrench with cilSettings or another valid icon
+  cilSpeedometer,
   cilUser,
-  cilUserFemale,
+  cilCalendar,
+  cilChartLine,
+  cilCloudDownload
 } from '@coreui/icons'
 
 import avatar1 from 'src/assets/images/avatars/1.jpg'
@@ -50,128 +36,127 @@ import avatar4 from 'src/assets/images/avatars/4.jpg'
 import avatar5 from 'src/assets/images/avatars/5.jpg'
 import avatar6 from 'src/assets/images/avatars/6.jpg'
 
-import WidgetsBrand from '../widgets/WidgetsBrand'
 import WidgetsDropdown from '../widgets/WidgetsDropdown'
 import MainChart from './MainChart'
 
 const Dashboard = () => {
-  const progressExample = [
-    { title: 'Visits', value: '29.703 Users', percent: 40, color: 'success' },
-    { title: 'Unique', value: '24.093 Users', percent: 20, color: 'info' },
-    { title: 'Pageviews', value: '78.706 Views', percent: 60, color: 'warning' },
-    { title: 'New Users', value: '22.123 Users', percent: 80, color: 'danger' },
-    { title: 'Bounce Rate', value: 'Average Rate', percent: 40.15, color: 'primary' },
+  const fleetMetrics = [
+    { title: 'Active Vehicles', value: '20', percent: 80, color: 'success' },
+    { title: 'Idle Vehicles', value: '10', percent: 10, color: 'warning' },
+    { title: 'Under Maintenance', value: '5', percent: 5, color: 'danger' },
+    { title: 'Fuel Consumption', value: '1,200 L', percent: 60, color: 'info' },
+    { title: 'Average Mileage', value: '45,000 km', percent: 75, color: 'primary' },
   ]
 
-  const progressGroupExample1 = [
-    { title: 'Monday', value1: 34, value2: 78 },
-    { title: 'Tuesday', value1: 56, value2: 94 },
-    { title: 'Wednesday', value1: 12, value2: 67 },
-    { title: 'Thursday', value1: 43, value2: 91 },
-    { title: 'Friday', value1: 22, value2: 73 },
-    { title: 'Saturday', value1: 53, value2: 82 },
-    { title: 'Sunday', value1: 9, value2: 69 },
+  const driverPerformance = [
+    { title: 'Monday', value1: 85, value2: 15 },
+    { title: 'Tuesday', value1: 90, value2: 10 },
+    { title: 'Wednesday', value1: 78, value2: 22 },
+    { title: 'Thursday', value1: 92, value2: 8 },
+    { title: 'Friday', value1: 88, value2: 12 },
+    { title: 'Saturday', value1: 80, value2: 20 },
+    { title: 'Sunday', value1: 75, value2: 25 },
   ]
 
-  const progressGroupExample2 = [
-    { title: 'Male', icon: cilUser, value: 53 },
-    { title: 'Female', icon: cilUserFemale, value: 43 },
+  const vehicleStatus = [
+    { title: 'On Route', icon: cilTruck, value: 85 },
+    { title: 'In Depot', icon: cilTruck, value: 15 },
   ]
 
-  const progressGroupExample3 = [
-    { title: 'Organic Search', icon: cibGoogle, percent: 56, value: '191,235' },
-    { title: 'Facebook', icon: cibFacebook, percent: 15, value: '51,223' },
-    { title: 'Twitter', icon: cibTwitter, percent: 11, value: '37,564' },
-    { title: 'LinkedIn', icon: cibLinkedin, percent: 8, value: '27,319' },
+  const maintenanceSchedule = [
+    { title: 'Oil Change', icon: cilSettings, percent: 30, value: 'Due in 500 km' }, // Replace cilWrench with cilSettings
+    { title: 'Tire Rotation', icon: cilSettings, percent: 50, value: 'Due in 1,000 km' }, // Replace cilWrench with cilSettings
+    { title: 'Brake Check', icon: cilSettings, percent: 70, value: 'Due in 2,000 km' }, // Replace cilWrench with cilSettings
+    { title: 'Engine Tune-Up', icon: cilSettings, percent: 90, value: 'Due in 5,000 km' }, // Replace cilWrench with cilSettings
   ]
 
-  const tableExample = [
+  const fleetTableData = [
     {
       avatar: { src: avatar1, status: 'success' },
-      user: {
-        name: 'Yiorgos Avraamu',
+      driver: {
+        name: 'John Doe',
         new: true,
-        registered: 'Jan 1, 2023',
+        license: 'Valid until Jan 1, 2025',
       },
-      country: { name: 'USA', flag: cifUs },
+      vehicle: { name: 'Truck #101', type: 'Heavy Duty' },
+      usage: {
+        value: 85,
+        period: 'Jun 11, 2023 - Jul 10, 2023',
+        color: 'success',
+      },
+      status: { name: 'On Route', icon: cilTruck },
+      activity: '10 sec ago',
+    },
+    {
+      avatar: { src: avatar2, status: 'danger' },
+      driver: {
+        name: 'Jane Smith',
+        new: false,
+        license: 'Valid until Jan 1, 2024',
+      },
+      vehicle: { name: 'Van #202', type: 'Light Duty' },
+      usage: {
+        value: 45,
+        period: 'Jun 11, 2023 - Jul 10, 2023',
+        color: 'warning',
+      },
+      status: { name: 'In Depot', icon: cilTruck },
+      activity: '5 minutes ago',
+    },
+    {
+      avatar: { src: avatar3, status: 'warning' },
+      driver: { name: 'Mike Johnson', new: true, license: 'Valid until Jan 1, 2026' },
+      vehicle: { name: 'Truck #303', type: 'Heavy Duty' },
+      usage: {
+        value: 60,
+        period: 'Jun 11, 2023 - Jul 10, 2023',
+        color: 'info',
+      },
+      status: { name: 'Under Maintenance', icon: cilSettings }, // Replace cilWrench with cilSettings
+      activity: '1 hour ago',
+    },
+    {
+      avatar: { src: avatar4, status: 'secondary' },
+      driver: { name: 'Sarah Lee', new: true, license: 'Valid until Jan 1, 2025' },
+      vehicle: { name: 'Truck #404', type: 'Heavy Duty' },
+      usage: {
+        value: 90,
+        period: 'Jun 11, 2023 - Jul 10, 2023',
+        color: 'danger',
+      },
+      status: { name: 'On Route', icon: cilTruck },
+      activity: 'Last month',
+    },
+    {
+      avatar: { src: avatar5, status: 'success' },
+      driver: {
+        name: 'Chris Brown',
+        new: true,
+        license: 'Valid until Jan 1, 2024',
+      },
+      vehicle: { name: 'Van #505', type: 'Light Duty' },
+      usage: {
+        value: 70,
+        period: 'Jun 11, 2023 - Jul 10, 2023',
+        color: 'primary',
+      },
+      status: { name: 'On Route', icon: cilTruck },
+      activity: 'Last week',
+    },
+    {
+      avatar: { src: avatar6, status: 'danger' },
+      driver: {
+        name: 'Emily Davis',
+        new: true,
+        license: 'Valid until Jan 1, 2025',
+      },
+      vehicle: { name: 'Truck #606', type: 'Heavy Duty' },
       usage: {
         value: 50,
         period: 'Jun 11, 2023 - Jul 10, 2023',
         color: 'success',
       },
-      payment: { name: 'Mastercard', icon: cibCcMastercard },
-      activity: '10 sec ago',
-    },
-    {
-      avatar: { src: avatar2, status: 'danger' },
-      user: {
-        name: 'Avram Tarasios',
-        new: false,
-        registered: 'Jan 1, 2023',
-      },
-      country: { name: 'Brazil', flag: cifBr },
-      usage: {
-        value: 22,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'info',
-      },
-      payment: { name: 'Visa', icon: cibCcVisa },
-      activity: '5 minutes ago',
-    },
-    {
-      avatar: { src: avatar3, status: 'warning' },
-      user: { name: 'Quintin Ed', new: true, registered: 'Jan 1, 2023' },
-      country: { name: 'India', flag: cifIn },
-      usage: {
-        value: 74,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'warning',
-      },
-      payment: { name: 'Stripe', icon: cibCcStripe },
-      activity: '1 hour ago',
-    },
-    {
-      avatar: { src: avatar4, status: 'secondary' },
-      user: { name: 'Enéas Kwadwo', new: true, registered: 'Jan 1, 2023' },
-      country: { name: 'France', flag: cifFr },
-      usage: {
-        value: 98,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'danger',
-      },
-      payment: { name: 'PayPal', icon: cibCcPaypal },
-      activity: 'Last month',
-    },
-    {
-      avatar: { src: avatar5, status: 'success' },
-      user: {
-        name: 'Agapetus Tadeáš',
-        new: true,
-        registered: 'Jan 1, 2023',
-      },
-      country: { name: 'Spain', flag: cifEs },
-      usage: {
-        value: 22,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'primary',
-      },
-      payment: { name: 'Google Wallet', icon: cibCcApplePay },
-      activity: 'Last week',
-    },
-    {
-      avatar: { src: avatar6, status: 'danger' },
-      user: {
-        name: 'Friderik Dávid',
-        new: true,
-        registered: 'Jan 1, 2023',
-      },
-      country: { name: 'Poland', flag: cifPl },
-      usage: {
-        value: 43,
-        period: 'Jun 11, 2023 - Jul 10, 2023',
-        color: 'success',
-      },
-      payment: { name: 'Amex', icon: cibCcAmex },
+      status: { name: 'In Depot', icon: cilTruck },
       activity: 'Last week',
     },
   ]
@@ -183,8 +168,8 @@ const Dashboard = () => {
         <CCardBody>
           <CRow>
             <CCol sm={5}>
-              <h4 id="traffic" className="card-title mb-0">
-                Traffic
+              <h4 id="fleet-overview" className="card-title mb-0">
+                Fleet Overview
               </h4>
               <div className="small text-body-secondary">January - July 2023</div>
             </CCol>
@@ -193,7 +178,7 @@ const Dashboard = () => {
                 <CIcon icon={cilCloudDownload} />
               </CButton>
               <CButtonGroup className="float-end me-3">
-                {['Day', 'Month', 'Year'].map((value) => (
+                {['Day', 'Week', 'Month'].map((value) => (
                   <CButton
                     color="outline-secondary"
                     key={value}
@@ -216,7 +201,7 @@ const Dashboard = () => {
             xl={{ cols: 5 }}
             className="mb-2 text-center"
           >
-            {progressExample.map((item, index, items) => (
+            {fleetMetrics.map((item, index, items) => (
               <CCol
                 className={classNames({
                   'd-none d-xl-block': index + 1 === items.length,
@@ -233,32 +218,30 @@ const Dashboard = () => {
           </CRow>
         </CCardFooter>
       </CCard>
-      <WidgetsBrand className="mb-4" withCharts />
+      
       <CRow>
         <CCol xs>
           <CCard className="mb-4">
-            <CCardHeader>Traffic {' & '} Sales</CCardHeader>
+            <CCardHeader>Driver Performance & Vehicle Status</CCardHeader>
             <CCardBody>
               <CRow>
                 <CCol xs={12} md={6} xl={6}>
                   <CRow>
                     <CCol xs={6}>
                       <div className="border-start border-start-4 border-start-info py-1 px-3">
-                        <div className="text-body-secondary text-truncate small">New Clients</div>
-                        <div className="fs-5 fw-semibold">9,123</div>
+                        <div className="text-body-secondary text-truncate small">On-Time Deliveries</div>
+                        <div className="fs-5 fw-semibold">92%</div>
                       </div>
                     </CCol>
                     <CCol xs={6}>
                       <div className="border-start border-start-4 border-start-danger py-1 px-3 mb-3">
-                        <div className="text-body-secondary text-truncate small">
-                          Recurring Clients
-                        </div>
-                        <div className="fs-5 fw-semibold">22,643</div>
+                        <div className="text-body-secondary text-truncate small">Delays</div>
+                        <div className="fs-5 fw-semibold">8%</div>
                       </div>
                     </CCol>
                   </CRow>
                   <hr className="mt-0" />
-                  {progressGroupExample1.map((item, index) => (
+                  {driverPerformance.map((item, index) => (
                     <div className="progress-group mb-4" key={index}>
                       <div className="progress-group-prepend">
                         <span className="text-body-secondary small">{item.title}</span>
@@ -274,21 +257,21 @@ const Dashboard = () => {
                   <CRow>
                     <CCol xs={6}>
                       <div className="border-start border-start-4 border-start-warning py-1 px-3 mb-3">
-                        <div className="text-body-secondary text-truncate small">Pageviews</div>
-                        <div className="fs-5 fw-semibold">78,623</div>
+                        <div className="text-body-secondary text-truncate small">Fuel Efficiency</div>
+                        <div className="fs-5 fw-semibold">8.5 km/L</div>
                       </div>
                     </CCol>
                     <CCol xs={6}>
                       <div className="border-start border-start-4 border-start-success py-1 px-3 mb-3">
-                        <div className="text-body-secondary text-truncate small">Organic</div>
-                        <div className="fs-5 fw-semibold">49,123</div>
+                        <div className="text-body-secondary text-truncate small">Total Mileage</div>
+                        <div className="fs-5 fw-semibold">45,000 km</div>
                       </div>
                     </CCol>
                   </CRow>
 
                   <hr className="mt-0" />
 
-                  {progressGroupExample2.map((item, index) => (
+                  {vehicleStatus.map((item, index) => (
                     <div className="progress-group mb-4" key={index}>
                       <div className="progress-group-header">
                         <CIcon className="me-2" icon={item.icon} size="lg" />
@@ -303,7 +286,7 @@ const Dashboard = () => {
 
                   <div className="mb-5"></div>
 
-                  {progressGroupExample3.map((item, index) => (
+                  {maintenanceSchedule.map((item, index) => (
                     <div className="progress-group" key={index}>
                       <div className="progress-group-header">
                         <CIcon className="me-2" icon={item.icon} size="lg" />
@@ -327,34 +310,35 @@ const Dashboard = () => {
                 <CTableHead className="text-nowrap">
                   <CTableRow>
                     <CTableHeaderCell className="bg-body-tertiary text-center">
-                      <CIcon icon={cilPeople} />
+                      <CIcon icon={cilUser} />
                     </CTableHeaderCell>
-                    <CTableHeaderCell className="bg-body-tertiary">User</CTableHeaderCell>
+                    <CTableHeaderCell className="bg-body-tertiary">Driver</CTableHeaderCell>
                     <CTableHeaderCell className="bg-body-tertiary text-center">
-                      Country
+                      Vehicle
                     </CTableHeaderCell>
                     <CTableHeaderCell className="bg-body-tertiary">Usage</CTableHeaderCell>
                     <CTableHeaderCell className="bg-body-tertiary text-center">
-                      Payment Method
+                      Status
                     </CTableHeaderCell>
                     <CTableHeaderCell className="bg-body-tertiary">Activity</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
-                  {tableExample.map((item, index) => (
+                  {fleetTableData.map((item, index) => (
                     <CTableRow v-for="item in tableItems" key={index}>
                       <CTableDataCell className="text-center">
                         <CAvatar size="md" src={item.avatar.src} status={item.avatar.status} />
                       </CTableDataCell>
                       <CTableDataCell>
-                        <div>{item.user.name}</div>
+                        <div>{item.driver.name}</div>
                         <div className="small text-body-secondary text-nowrap">
-                          <span>{item.user.new ? 'New' : 'Recurring'}</span> | Registered:{' '}
-                          {item.user.registered}
+                          <span>{item.driver.new ? 'New' : 'Experienced'}</span> | License:{' '}
+                          {item.driver.license}
                         </div>
                       </CTableDataCell>
                       <CTableDataCell className="text-center">
-                        <CIcon size="xl" icon={item.country.flag} title={item.country.name} />
+                        <div>{item.vehicle.name}</div>
+                        <div className="small text-body-secondary">{item.vehicle.type}</div>
                       </CTableDataCell>
                       <CTableDataCell>
                         <div className="d-flex justify-content-between text-nowrap">
@@ -366,10 +350,10 @@ const Dashboard = () => {
                         <CProgress thin color={item.usage.color} value={item.usage.value} />
                       </CTableDataCell>
                       <CTableDataCell className="text-center">
-                        <CIcon size="xl" icon={item.payment.icon} />
+                        <CIcon size="xl" icon={item.status.icon} />
                       </CTableDataCell>
                       <CTableDataCell>
-                        <div className="small text-body-secondary text-nowrap">Last login</div>
+                        <div className="small text-body-secondary text-nowrap">Last update</div>
                         <div className="fw-semibold text-nowrap">{item.activity}</div>
                       </CTableDataCell>
                     </CTableRow>

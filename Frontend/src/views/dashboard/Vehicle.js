@@ -141,7 +141,6 @@ const Vehicles = () => {
                       <CTableHeaderCell>Registration</CTableHeaderCell>
                       <CTableHeaderCell>Make</CTableHeaderCell>
                       <CTableHeaderCell> Vehicle Type</CTableHeaderCell>
-                      <CTableHeaderCell>Status</CTableHeaderCell>
                       <CTableHeaderCell>Actions</CTableHeaderCell>
                     </CTableRow>
                   </CTableHead>
@@ -177,11 +176,7 @@ const Vehicles = () => {
                           </CTableDataCell>
                           <CTableDataCell>{vehicle.make}</CTableDataCell>
                           <CTableDataCell>{vehicle.vehicleType}</CTableDataCell>
-                          <CTableDataCell>
-                            <CBadge color={vehicle.operationalStatus === 'active' ? 'success' : 'danger'}>
-                              {vehicle.operationalStatus}
-                            </CBadge>
-                          </CTableDataCell>
+                          
                           <CTableDataCell>
                             <CButton 
                               color="primary" 

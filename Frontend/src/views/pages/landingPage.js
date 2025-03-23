@@ -11,14 +11,17 @@ import {
   CCard,
   CCardBody,
   CCardText,
-  CLink
+  CLink,
+  CImage,
 } from '@coreui/react';
 import { Link } from 'react-router-dom';
+import logo from '../../assets/AFA-Logo-mini.png';
 import { MdGpsFixed } from 'react-icons/md';
 import { GrHostMaintenance } from 'react-icons/gr';
 import { FaUser } from 'react-icons/fa';
 import { TbReportSearch } from 'react-icons/tb';
 import { FaXTwitter, FaLinkedin, FaFacebookF } from 'react-icons/fa6';
+import './LandingPage.css'; // Import custom CSS for animations and backgrounds
 
 const LandingPage = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -34,9 +37,11 @@ const LandingPage = () => {
 
   return (
     <div className="landing-page">
+      {/* Header with CoreUI Navbar */}
       <CNavbar expand="lg" className={`p-3 ${scrolled ? 'bg-white shadow-sm' : 'bg-transparent'}`} fixed="top">
         <CContainer>
           <CNavbarBrand href="#">
+            <CImage src={logo} alt="AFA Fleet Management System Logo" className="w-32 h-32" />
           </CNavbarBrand>
           <CNav className="ms-auto">
             <CNavLink href="#home">HOME</CNavLink>
@@ -48,9 +53,10 @@ const LandingPage = () => {
       </CNavbar>
 
       <main>
-        <section className="hero" >
-          <CContainer className="h-100 d-flex align-items-center">
-            <CRow className="justify-content-center text-center text-white">
+        {/* Hero Section */}
+        <section id="home" className="hero d-flex align-items-center">
+          <CContainer>
+            <CRow className="justify-content-center text-center">
               <CCol md={8}>
                 <h1 className="display-4 mb-4">Welcome to AFA Fleet Management System</h1>
                 <p className="lead mb-5">
@@ -69,50 +75,34 @@ const LandingPage = () => {
           </CContainer>
         </section>
 
-        <section id="features" className="py-5">
+        {/* Features Section */}
+        <section id="features" className="features py-5">
           <CContainer>
             <CRow className="g-4">
-              <CCol md={3}>
-                <CCard className="h-100 text-center p-4">
-                  <CCardBody>
-                    <MdGpsFixed className="feature-icon display-4 mb-3 text-primary" />
-                    <h3>Real-Time GPS Tracking</h3>
-                    <CCardText>Monitor your fleet in real-time with live GPS tracking.</CCardText>
-                  </CCardBody>
-                </CCard>
-              </CCol>
-              <CCol md={3}>
-                <CCard className="h-100 text-center p-4">
-                  <CCardBody>
-                    <GrHostMaintenance className="feature-icon display-4 mb-3 text-primary" />
-                    <h3>Automated Maintenance</h3>
-                    <CCardText>Receive timely alerts for vehicle servicing.</CCardText>
-                  </CCardBody>
-                </CCard>
-              </CCol>
-              <CCol md={3}>
-                <CCard className="h-100 text-center p-4">
-                  <CCardBody>
-                    <FaUser className="feature-icon display-4 mb-3 text-primary" />
-                    <h3>Driver Management</h3>
-                    <CCardText>Track driver compliance and performance.</CCardText>
-                  </CCardBody>
-                </CCard>
-              </CCol>
-              <CCol md={3}>
-                <CCard className="h-100 text-center p-4">
-                  <CCardBody>
-                    <TbReportSearch className="feature-icon display-4 mb-3 text-primary" />
-                    <h3>Automated Reporting</h3>
-                    <CCardText>Detailed reports on fuel usage and compliance.</CCardText>
-                  </CCardBody>
-                </CCard>
-              </CCol>
+              {[
+                { icon: <MdGpsFixed />, title: 'Real-Time GPS Tracking', text: 'Monitor your fleet in real-time with live GPS tracking.' },
+                { icon: <GrHostMaintenance />, title: 'Automated Maintenance Alerts', text: 'Receive timely alerts for vehicle servicing and maintenance.' },
+                { icon: <FaUser />, title: 'Driver Management', text: 'Track driver compliance and performance.' },
+                { icon: <TbReportSearch />, title: 'Automated Reporting', text: 'Generate detailed reports on fuel usage, maintenance, and compliance.' },
+              ].map((feature, index) => (
+                <CCol md={3} key={index}>
+                  <CCard className="h-100 text-center p-4 feature-card">
+                    <CCardBody>
+                      <div className="feature-icon mb-4">
+                        {React.cloneElement(feature.icon, { className: 'display-4 text-primary' })}
+                      </div>
+                      <h3>{feature.title}</h3>
+                      <CCardText>{feature.text}</CCardText>
+                    </CCardBody>
+                  </CCard>
+                </CCol>
+              ))}
             </CRow>
           </CContainer>
         </section>
 
-        <section id="dashboard" className="py-5 bg-light">
+        {/* Dashboard Preview Section */}
+        <section id="dashboard" className="dashboard-preview py-5">
           <CContainer>
             <CRow className="justify-content-center">
               <CCol md={8} className="text-center">
@@ -123,7 +113,8 @@ const LandingPage = () => {
           </CContainer>
         </section>
 
-        <section id="testimonials" className="py-5">
+        {/* Testimonials Section */}
+        <section id="testimonials" className="testimonials py-5">
           <CContainer>
             <CRow className="justify-content-center">
               <CCol md={8} className="text-center">
@@ -132,10 +123,10 @@ const LandingPage = () => {
                   <CCardBody>
                     <blockquote className="blockquote mb-0">
                       <p className="lead">
-                        "The Fleet Management System has transformed how we manage our vehicles. The real-time tracking and automated reports have saved us countless hours."
+                        "The Fleet Management System has transformed how we manage our vehicles and drivers. The real-time tracking and automated reports have saved us countless hours."
                       </p>
                       <footer className="blockquote-footer mt-3">
-                        <strong>Fleet Manager, AFA</strong>
+                        <strong>– Fleet Manager, AFA</strong>
                       </footer>
                     </blockquote>
                   </CCardBody>
@@ -146,7 +137,8 @@ const LandingPage = () => {
         </section>
       </main>
 
-      <footer className="bg-dark text-white py-5">
+      {/* Footer Section */}
+      <footer className="footer bg-dark text-white py-5">
         <CContainer>
           <CRow className="g-4">
             <CCol md={4}>

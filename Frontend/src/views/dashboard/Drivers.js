@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import axios from 'axios'
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
 import {
   CCard,
   CCardBody,
@@ -27,12 +27,12 @@ import {
   CInputGroup,
   CImage,
   CCollapse,
-  CBadge
-} from '@coreui/react'
-import { cilPlus, cilPencil, cilTrash, cilChevronBottom, cilChevronTop } from '@coreui/icons'
-import CIcon from '@coreui/icons-react'
+  CBadge,
+} from '@coreui/react';
+import { cilPlus, cilPencil, cilTrash, cilChevronBottom, cilChevronTop } from '@coreui/icons';
+import CIcon from '@coreui/icons-react';
 
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Drivers = () => {
   const [state, setState] = useState({
@@ -46,179 +46,234 @@ const Drivers = () => {
     formData: {
       firstName: '',
       lastName: '',
-      licenseNumber: '',
       phone: '',
+      licenseNumber: '',
       email: '',
       dateOfBirth: '',
       drivingScore: 0,
       activeStatus: true,
+      // Using YYYY-MM-DD format for date inputs
       hireDate: new Date().toISOString().split('T')[0],
-      profilePicture: null
-    }
-  })
+      profilePicture: null,
+    },
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedDriver, setExpandedDriver] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState({ show: false, driverId: null });
+  const isMounted = useRef(true);
+  const abortControllerRef = useRef();
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [expandedDriver, setExpandedDriver] = useState(null)
-  const [deleteConfirmation, setDeleteConfirmation] = useState({ show: false, driverId: null })
-  const isMounted = useRef(true)
-  const abortControllerRef = useRef()
-
+  // Fetch drivers from the API
   const fetchDrivers = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: '' }))
+    setState((prev) => ({ ...prev, loading: true, error: '' }));
     try {
-      const response = await axios.get(`${API_URL}/drivers`)
+      const response = await axios.get(`${API_URL}/drivers`);
       if (isMounted.current) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           drivers: response.data.data?.drivers || [],
-          loading: false
-        }))
+          loading: false,
+        }));
       }
     } catch (err) {
       if (isMounted.current) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           error: err.response?.data?.message || 'Failed to load drivers',
-          loading: false
-        }))
+          loading: false,
+        }));
       }
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    isMounted.current = true
-    fetchDrivers()
+    isMounted.current = true;
+    fetchDrivers();
     return () => {
-      isMounted.current = false
-      abortControllerRef.current?.abort()
-    }
-  }, [fetchDrivers])
+      isMounted.current = false;
+      abortControllerRef.current?.abort();
+    };
+  }, [fetchDrivers]);
 
+  // Clear success message after 3 seconds
   useEffect(() => {
     if (state.success) {
       const timer = setTimeout(() => {
-        setState(prev => ({ ...prev, success: '' }))
-      }, 3000)
-      return () => clearTimeout(timer)
+        setState((prev) => ({ ...prev, success: '' }));
+      }, 3000);
+      return () => clearTimeout(timer);
     }
-  }, [state.success])
+  }, [state.success]);
 
   const toggleDriverDetails = (driverId) => {
-    setExpandedDriver(prev => prev === driverId ? null : driverId)
-  }
+    setExpandedDriver((prev) => (prev === driverId ? null : driverId));
+  };
 
   const handleDeleteConfirmation = (driverId) => {
-    setDeleteConfirmation({ show: true, driverId })
-  }
+    setDeleteConfirmation({ show: true, driverId });
+  };
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`${API_URL}/drivers/${deleteConfirmation.driverId}`)
-      setState(prev => ({
+      await axios.delete(`${API_URL}/drivers/${deleteConfirmation.driverId}`);
+      setState((prev) => ({
         ...prev,
-        drivers: prev.drivers.filter(d => d._id !== deleteConfirmation.driverId),
-        success: 'Driver deleted successfully'
-      }))
-      fetchDrivers()
+        drivers: prev.drivers.filter((d) => d._id !== deleteConfirmation.driverId),
+        success: 'Driver deleted successfully',
+      }));
+      fetchDrivers();
     } catch (err) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: err.response?.data?.message || 'Delete failed'
-      }))
+        error: err.response?.data?.message || 'Delete failed',
+      }));
     } finally {
-      setDeleteConfirmation({ show: false, driverId: null })
+      setDeleteConfirmation({ show: false, driverId: null });
     }
-  }
+  };
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked, files } = e.target
-    setState(prev => ({
+    const { name, value, type, checked, files } = e.target;
+    setState((prev) => ({
       ...prev,
       formData: {
         ...prev.formData,
-        [name]: type === 'checkbox' ? checked : 
-                type === 'file' ? files[0] : value
-      }
-    }))
-  }
+        [name]:
+          type === 'checkbox'
+            ? checked
+            : type === 'file'
+            ? files[0]
+            : value,
+      },
+    }));
+  };
+
+  // Create driver using multipart/form-data
+  const handleCreateDriver = async (data) => {
+    try {
+      const response = await axios.post(`${API_URL}/drivers`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Update driver using multipart/form-data
+  const handleUpdateDriver = async (driverId, data) => {
+    try {
+      const response = await axios.put(`${API_URL}/drivers/${driverId}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    const controller = new AbortController()
-    abortControllerRef.current = controller
-    
-    try {
-      setState(prev => ({ ...prev, error: '', isSubmitting: true }))
-      const { editingDriver, formData } = state
-      const data = new FormData()
+    e.preventDefault();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
+    try {
+      setState((prev) => ({ ...prev, error: '', isSubmitting: true }));
+      const { editingDriver, formData } = state;
+      const data = new FormData();
+
+      // Append all fields to FormData
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (key === 'profilePicture' && value instanceof File) {
-            data.append(key, value, value.name)
+            data.append(key, value, value.name);
+          } else if (key === 'dateOfBirth' || key === 'hireDate') {
+            // Convert date fields to ISO strings
+            data.append(key, new Date(value).toISOString());
           } else {
-            data.append(key, value)
+            data.append(key, value);
           }
         }
-      })
+      });
 
-      const config = {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        signal: controller.signal
+      // Debug: Log FormData entries
+      for (let [key, value] of data.entries()) {
+        console.log(key, value);
       }
 
-      const response = editingDriver 
-        ? await axios.put(`${API_URL}/drivers/${editingDriver._id}`, data, config)
-        : await axios.post(`${API_URL}/drivers`, data, config)
+      
+    const config = {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      signal: controller.signal,
+    };
 
-      setState(prev => ({
+
+      let response;
+      if (editingDriver) {
+        response = await axios.put(`${API_URL}/drivers/${editingDriver._id}`, data, config);
+            } else {
+          response = await axios.post(`${API_URL}/drivers`, data, config);      }
+
+      setState((prev) => ({
         ...prev,
         modalVisible: false,
         success: `Driver ${editingDriver ? 'updated' : 'created'} successfully!`,
         isSubmitting: false,
+        // Reset form fields; note the consistent YYYY-MM-DD format for dates
         formData: {
           firstName: '',
           lastName: '',
-          licenseNumber: '',
           phone: '',
+          licenseNumber:'',
           email: '',
           dateOfBirth: '',
           drivingScore: 0,
           activeStatus: true,
-          hireDate: new Date().toISOString().split('T')[0],
-          profilePicture: null
-        }
-      }))
-      
-      fetchDrivers()
+          hireDate: '',
+          profilePicture: null,
+        },
+        editingDriver: null,
+      }));
+
+      fetchDrivers();
     } catch (error) {
       if (isMounted.current && !axios.isCancel(error)) {
-        setState(prev => ({
+        console.error('Backend Error:', error.response?.data); 
+        setState((prev) => ({
           ...prev,
-          error: error.response?.data?.message || "Operation failed. Please check your inputs.",
-          isSubmitting: false
-        }))
+          error: error.response?.data?.message || 'Operation failed. Please check your inputs.',
+          isSubmitting: false,
+        }));
       }
     }
-  }
+  };
 
-  const filteredDrivers = state.drivers.filter(driver =>
+  const filteredDrivers = state.drivers.filter((driver) =>
     `${driver.firstName || ''} ${driver.lastName || ''}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
-  )
+  );
 
+  // When modal is opened for editing, populate formData with driver's data
   useEffect(() => {
     if (state.modalVisible && state.editingDriver) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         formData: {
           ...state.editingDriver,
-          profilePicture: state.editingDriver.profilePicture || null
-        }
-      }))
+          // Ensure the profilePicture remains a string if it exists
+          profilePicture: state.editingDriver.profilePicture || null,
+          // Format dates to YYYY-MM-DD for date inputs
+          dateOfBirth: state.editingDriver.dateOfBirth
+            ? new Date(state.editingDriver.dateOfBirth).toISOString().split('T')[0]
+            : '',
+          hireDate: state.editingDriver.hireDate
+            ? new Date(state.editingDriver.hireDate).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0],
+        },
+      }));
     }
-  }, [state.modalVisible, state.editingDriver])
+  }, [state.modalVisible, state.editingDriver]);
 
   return (
     <CRow>
@@ -226,9 +281,27 @@ const Drivers = () => {
         <CCard className="mb-4">
           <CCardHeader className="d-flex justify-content-between align-items-center">
             <h5 className="mb-0">Driver Management</h5>
-            <CButton 
+            <CButton
               color="primary"
-              onClick={() => setState(prev => ({ ...prev, modalVisible: true }))}
+              onClick={() =>
+                setState((prev) => ({
+                  ...prev,
+                  modalVisible: true,
+                  editingDriver: null,
+                  formData: {
+                    firstName: '',
+                    lastName: '',
+                    phone: '',
+                    licenseNumber:'',
+                    email: '',
+                    dateOfBirth: '',
+                    drivingScore: 0,
+                    activeStatus: true,
+                    hireDate: new Date().toISOString().split('T')[0],
+                    profilePicture: null,
+                  },
+                }))
+              }
             >
               <CIcon icon={cilPlus} className="me-2" />
               Add Driver
@@ -264,113 +337,131 @@ const Drivers = () => {
                       <CSpinner color="primary" />
                     </CTableDataCell>
                   </CTableRow>
-                ) : filteredDrivers.map(driver => (
-                  <React.Fragment key={driver._id}>
-                    <CTableRow>
-                      <CTableDataCell>
-                        <CButton 
-                          color="link"
-                          onClick={() => toggleDriverDetails(driver._id)}
-                        >
-                          <CIcon 
-                            icon={expandedDriver === driver._id ? cilChevronTop : cilChevronBottom} 
-                          />
-                        </CButton>
-                      </CTableDataCell>
-                      <CTableDataCell>
-                        <div className="d-flex align-items-center">
-                          {driver.profilePicture && (
-                            <CImage 
-                              thumbnail 
-                              src={driver.profilePicture} 
-                              width={50} 
-                              className="me-3"
+                ) : (
+                  filteredDrivers.map((driver) => (
+                    <React.Fragment key={driver._id}>
+                      <CTableRow>
+                        <CTableDataCell>
+                          <CButton
+                            color="link"
+                            onClick={() => toggleDriverDetails(driver._id)}
+                          >
+                            <CIcon
+                              icon={
+                                expandedDriver === driver._id
+                                  ? cilChevronTop
+                                  : cilChevronBottom
+                              }
                             />
-                          )}
-                          <div>
-                            {driver.firstName} {driver.lastName}
-                            <div className="small text-muted">{driver.email}</div>
+                          </CButton>
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          <div className="d-flex align-items-center">
+                            {driver.profilePicture && (
+                              <CImage
+                                thumbnail
+                                src={driver.profilePicture}
+                                width={50}
+                                className="me-3"
+                              />
+                            )}
+                            <div>
+                              {driver.firstName} {driver.lastName}
+                              <div className="small text-muted">{driver.email}</div>
+                            </div>
                           </div>
-                        </div>
-                      </CTableDataCell>
-                      <CTableDataCell>{driver.licenseNumber}</CTableDataCell>
-                      <CTableDataCell>{driver.phone}</CTableDataCell>
-                      <CTableDataCell>
-                        <CBadge color={driver.activeStatus ? 'success' : 'danger'}>
-                          {driver.activeStatus ? 'Active' : 'Inactive'}
-                        </CBadge>
-                      </CTableDataCell>
-                      <CTableDataCell>
-                        <CButton 
-                          color="warning" 
-                          variant="outline" 
-                          size="sm"
-                          className="me-2"
-                          onClick={() => setState(prev => ({
-                            ...prev,
-                            editingDriver: driver,
-                            modalVisible: true
-                          }))}
-                        >
-                          <CIcon icon={cilPencil} />
-                        </CButton>
-                        <CButton
-                          color="danger"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteConfirmation(driver._id)}
-                        >
-                          <CIcon icon={cilTrash} />
-                        </CButton>
-                      </CTableDataCell>
-                    </CTableRow>
-                    <CTableRow>
-                      <CTableDataCell colSpan={6} className="p-0">
-                        <CCollapse visible={expandedDriver === driver._id}>
-                          <div className="p-3 bg-light">
-                            <CRow>
-                              <CCol md={3}>
-                                <strong>Date of Birth:</strong> 
-                                <div>{driver.dateOfBirth}</div>
-                              </CCol>
-                              <CCol md={3}>
-                                <strong>Hire Date:</strong> 
-                                <div>{driver.hireDate}</div>
-                              </CCol>
-                              <CCol md={3}>
-                                <strong>Driving Score:</strong> 
-                                <div>{driver.drivingScore}/100</div>
-                              </CCol>
-                              <CCol md={3}>
-                                <strong>License Expiry:</strong> 
-                                <div>{driver.licenseExpiry || 'N/A'}</div>
-                              </CCol>
-                              <CCol md={12} className="mt-3">
-                                {driver.profilePicture && (
-                                  <CImage 
-                                    src={driver.profilePicture} 
-                                    fluid 
-                                    className="img-thumbnail"
-                                    style={{ maxWidth: '200px' }}
-                                  />
-                                )}
-                              </CCol>
-                            </CRow>
-                          </div>
-                        </CCollapse>
-                      </CTableDataCell>
-                    </CTableRow>
-                  </React.Fragment>
-                ))}
+                        </CTableDataCell>
+                        <CTableDataCell>{driver.licenseNumber}</CTableDataCell>
+                        <CTableDataCell>{driver.phone}</CTableDataCell>
+                        <CTableDataCell>
+                          <CBadge color={driver.activeStatus ? 'success' : 'danger'}>
+                            {driver.activeStatus ? 'Active' : 'Inactive'}
+                          </CBadge>
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          <CButton
+                            color="warning"
+                            variant="outline"
+                            size="sm"
+                            className="me-2"
+                            onClick={() =>
+                              setState((prev) => ({
+                                ...prev,
+                                editingDriver: driver,
+                                modalVisible: true,
+                              }))
+                            }
+                          >
+                            <CIcon icon={cilPencil} />
+                          </CButton>
+                          <CButton
+                            color="danger"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteConfirmation(driver._id)}
+                          >
+                            <CIcon icon={cilTrash} />
+                          </CButton>
+                        </CTableDataCell>
+                      </CTableRow>
+                      <CTableRow>
+                        <CTableDataCell colSpan={6} className="p-0">
+                          <CCollapse visible={expandedDriver === driver._id}>
+                            <div className="p-3 bg-light">
+                              <CRow>
+                                <CCol md={3}>
+                                  <strong>Date of Birth:</strong>
+                                  <div>
+                                    {driver.dateOfBirth
+                                      ? new Date(driver.dateOfBirth).toLocaleDateString()
+                                      : 'N/A'}
+                                  </div>
+                                </CCol>
+                                <CCol md={3}>
+                                  <strong>Hire Date:</strong>
+                                  <div>
+                                    {driver.hireDate
+                                      ? new Date(driver.hireDate).toLocaleDateString()
+                                      : 'N/A'}
+                                  </div>
+                                </CCol>
+                                <CCol md={3}>
+                                  <strong>Driving Score:</strong>
+                                  <div>{driver.drivingScore}/100</div>
+                                </CCol>
+                                <CCol md={3}>
+                                  <strong>License Expiry:</strong>
+                                  <div>{driver.licenseExpiry || 'N/A'}</div>
+                                </CCol>
+                                <CCol md={12} className="mt-3">
+                                  {driver.profilePicture && (
+                                    <CImage
+                                      src={driver.profilePicture}
+                                      fluid
+                                      className="img-thumbnail"
+                                      style={{ maxWidth: '200px' }}
+                                    />
+                                  )}
+                                </CCol>
+                              </CRow>
+                            </div>
+                          </CCollapse>
+                        </CTableDataCell>
+                      </CTableRow>
+                    </React.Fragment>
+                  ))
+                )}
               </CTableBody>
             </CTable>
           </CCardBody>
         </CCard>
 
         {/* Driver Form Modal */}
-        <CModal 
-          visible={state.modalVisible} 
-          onClose={() => setState(prev => ({ ...prev, modalVisible: false }))}
+        <CModal
+          visible={state.modalVisible}
+          onClose={() =>
+            setState((prev) => ({ ...prev, modalVisible: false, editingDriver: null }))
+          }
           size="lg"
         >
           <CModalHeader closeButton>
@@ -401,19 +492,19 @@ const Drivers = () => {
                 </CCol>
                 <CCol md={6}>
                   <CFormInput
-                    label="License Number"
-                    name="licenseNumber"
-                    value={state.formData.licenseNumber}
+                    label="Phone Number"
+                    name="phone"
+                    type="tel"
+                    value={state.formData.phone}
                     onChange={handleInputChange}
                     required
                   />
                 </CCol>
                 <CCol md={6}>
                   <CFormInput
-                    label="Phone Number"
-                    name="phone"
-                    type="tel"
-                    value={state.formData.phone}
+                    label="License Number"
+                    name="licenseNumber"
+                    value={state.formData.licenseNumber}
                     onChange={handleInputChange}
                     required
                   />
@@ -464,14 +555,14 @@ const Drivers = () => {
                   <CInputGroup>
                     <CFormLabel>Profile Picture</CFormLabel>
                     {state.formData.profilePicture && (
-                      <CImage 
-                        thumbnail 
+                      <CImage
+                        thumbnail
                         src={
-                          typeof state.formData.profilePicture === 'string' 
-                            ? state.formData.profilePicture 
+                          typeof state.formData.profilePicture === 'string'
+                            ? state.formData.profilePicture
                             : URL.createObjectURL(state.formData.profilePicture)
-                        } 
-                        width={100} 
+                        }
+                        width={100}
                         className="mb-2"
                       />
                     )}
@@ -488,28 +579,28 @@ const Drivers = () => {
                     label="Active Status"
                     name="activeStatus"
                     checked={state.formData.activeStatus}
-                    onChange={(e) => setState(prev => ({
-                      ...prev,
-                      formData: {
-                        ...prev.formData,
-                        activeStatus: e.target.checked
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setState((prev) => ({
+                        ...prev,
+                        formData: {
+                          ...prev.formData,
+                          activeStatus: e.target.checked,
+                        },
+                      }))
+                    }
                   />
                 </CCol>
               </CRow>
               <div className="mt-4 d-flex justify-content-end gap-2">
-                <CButton 
-                  color="secondary" 
-                  onClick={() => setState(prev => ({ ...prev, modalVisible: false }))}
+                <CButton
+                  color="secondary"
+                  onClick={() =>
+                    setState((prev) => ({ ...prev, modalVisible: false, editingDriver: null }))
+                  }
                 >
                   Cancel
                 </CButton>
-                <CButton 
-                  color="primary" 
-                  type="submit"
-                  disabled={state.isSubmitting}
-                >
+                <CButton color="primary" type="submit" disabled={state.isSubmitting}>
                   {state.isSubmitting && <CSpinner size="sm" className="me-2" />}
                   {state.editingDriver ? 'Update' : 'Create'}
                 </CButton>
@@ -519,8 +610,8 @@ const Drivers = () => {
         </CModal>
 
         {/* Delete Confirmation Modal */}
-        <CModal 
-          visible={deleteConfirmation.show} 
+        <CModal
+          visible={deleteConfirmation.show}
           onClose={() => setDeleteConfirmation({ show: false, driverId: null })}
         >
           <CModalHeader closeButton>
@@ -540,7 +631,7 @@ const Drivers = () => {
         </CModal>
       </CCol>
     </CRow>
-  )
-}
+  );
+};
 
-export default Drivers
+export default Drivers;

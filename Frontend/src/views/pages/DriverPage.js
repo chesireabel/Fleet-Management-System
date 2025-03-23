@@ -1,91 +1,108 @@
-import { useState } from 'react';
+import React from 'react';
+import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import {
   CContainer,
   CCard,
   CCardBody,
   CCardHeader,
-  CTabs,
   CNav,
   CNavItem,
   CNavLink,
-  CTabContent,
-  CTabPane,
-  CAlert
+  CRow,
+  CCol,
+  CButton,
 } from '@coreui/react';
+import { CIcon } from '@coreui/icons-react';
+import { cilWarning, cilUser, cilAccountLogout } from '@coreui/icons';
 import TripList from '../driver/TripList';
-import IssueReportForm from '..//driver/IssueReportForm';
+import IssueReportForm from '../driver/IssueReportForm';
 import DriverProfile from '../driver/DriverProfile';
 
 const DriverPage = () => {
-  const [activeTab, setActiveTab] = useState('trips'); // Default tab
-  const [alert, setAlert] = useState({ visible: false, message: '', color: '' });
+  const navigate = useNavigate();
 
-  // Sample data (replace with API calls)
-  const trips = [
-    {
-      id: 1,
-      vehicle: 'KAA 123A',
-      startLocation: 'Nairobi',
-      endLocation: 'Mombasa',
-      status: 'In Progress'
-    },
-    {
-      id: 2,
-      vehicle: 'KBB 456B',
-      startLocation: 'Kisumu',
-      endLocation: 'Nakuru',
-      status: 'Pending'
-    }
-  ];
-
-  const showAlert = (message, color) => {
-    setAlert({ visible: true, message, color });
-    setTimeout(() => setAlert({ ...alert, visible: false }), 5000);
+  const handleLogout = () => {
+    // Add your logout logic here
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    navigate('/login');
   };
 
   return (
-    <CContainer>
-      <CCard>
-        <CCardHeader>
-          <h2>Driver Dashboard</h2>
+    <CContainer 
+      fluid 
+      className="min-vh-100 p-0 d-flex flex-column" 
+      style={{ backgroundColor: '#f8f9fa' }}
+    >
+      <CCard className="shadow-sm flex-grow-1 rounded-0">
+        <CCardHeader className="bg-light py-3 border-bottom">
+          <CRow className="align-items-center">
+            <CCol>
+              <h3 className="mb-0">🚛 Driver Dashboard</h3>
+            </CCol>
+            <CCol xs="auto">
+              <CButton 
+                color="danger" 
+                variant="outline" 
+                onClick={handleLogout}
+                className="d-flex align-items-center"
+              >
+                <CIcon icon={cilAccountLogout} className="me-2" />
+                Log Out
+              </CButton>
+            </CCol>
+          </CRow>
         </CCardHeader>
-        <CCardBody>
-          {alert.visible && (
-            <CAlert color={alert.color} dismissible onClose={() => setAlert({ ...alert, visible: false })}>
-              {alert.message}
-            </CAlert>
-          )}
+        
+        <CCardBody className="p-0 d-flex flex-column">
+          <CNav variant="tabs" className="m-3 mb-0">
+            <CNavItem>
+              <CNavLink 
+                as={Link} 
+                to="/driver/trips" 
+                className="text-dark fw-medium px-4 py-3"
+                activeClassName="active bg-white border-bottom-white"
+              >
+                <CIcon className="me-2" />
+                My Trips
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink 
+                as={Link} 
+                to="/driver/issues" 
+                className="text-dark fw-medium px-4 py-3"
+                activeClassName="active bg-white border-bottom-white"
+              >
+                <CIcon icon={cilWarning} className="me-2" />
+                Report Issue
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink 
+                as={Link} 
+                to="/driver/profile" 
+                className="text-dark fw-medium px-4 py-3"
+                activeClassName="active bg-white border-bottom-white"
+              >
+                <CIcon icon={cilUser} className="me-2" />
+                Profile
+              </CNavLink>
+            </CNavItem>
+          </CNav>
 
-          {/* Tab Navigation */}
-          <CTabs activeTab={activeTab} onActiveTabChange={(idx) => setActiveTab(idx)}>
-            <CNav variant="tabs">
-              <CNavItem>
-                <CNavLink>My Trips</CNavLink>
-              </CNavItem>
-              <CNavItem>
-                <CNavLink>Report Issue</CNavLink>
-              </CNavItem>
-              <CNavItem>
-                <CNavLink>Profile</CNavLink>
-              </CNavItem>
-            </CNav>
-
-            {/* Tab Content */}
-            <CTabContent>
-              <CTabPane>
-                {/* Trip List Component */}
-                <TripList trips={trips} onSelectTrip={(trip) => console.log('Selected Trip:', trip)} />
-              </CTabPane>
-              <CTabPane>
-                {/* Issue Report Form */}
-                <IssueReportForm onSubmit={(data) => showAlert('Issue reported successfully!', 'success')} />
-              </CTabPane>
-              <CTabPane>
-                {/* Driver Profile Component */}
-                <DriverProfile onSubmit={(data) => showAlert('Profile updated successfully!', 'success')} />
-              </CTabPane>
-            </CTabContent>
-          </CTabs>
+          <div className="flex-grow-1 p-4" style={{ overflow: 'auto' }}>
+            <CCard className="shadow-sm h-100">
+              <CCardBody className="p-4" style={{ minHeight: '400px' }}>
+                <Routes>
+                  <Route index element={<Navigate to="/driver/trips" replace />} />
+                  <Route path="/trips/*" element={<TripList />} />
+                  <Route path="/issues" element={<IssueReportForm />} />
+                  <Route path="/profile" element={<DriverProfile />} />
+                </Routes>
+              </CCardBody>
+            </CCard>
+          </div>
         </CCardBody>
       </CCard>
     </CContainer>

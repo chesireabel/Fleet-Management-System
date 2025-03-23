@@ -1,54 +1,31 @@
-import { CForm, CFormInput, CButton } from '@coreui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { CCard, CCardBody, CCardHeader } from '@coreui/react';
 
-const DriverProfile = ({ onSubmit }) => {
-  const [profile, setProfile] = useState({
-    name: '',
-    email: '',
-    phone: ''
-  });
+const DriverProfile = () => {
+  const [driver, setDriver] = useState(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(profile);
-  };
+  useEffect(() => {
+    fetch('http://localhost:5000/api/driver/profile')
+      .then(response => response.json())
+      .then(data => setDriver(data))
+      .catch(error => console.error('Error fetching profile:', error));
+  }, []);
+
+  if (!driver) {
+    return <p>Loading profile...</p>;
+  }
 
   return (
-    <CForm onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <CFormInput
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          value={profile.name}
-          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <CFormInput
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={profile.email}
-          onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <CFormInput
-          type="tel"
-          name="phone"
-          placeholder="Phone Number"
-          value={profile.phone}
-          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-          required
-        />
-      </div>
-      <CButton type="submit" color="primary">
-        Update Profile
-      </CButton>
-    </CForm>
+    <CCard>
+      <CCardHeader>
+        <h2>Driver Profile</h2>
+      </CCardHeader>
+      <CCardBody>
+        <p><strong>Name:</strong> {driver.name}</p>
+        <p><strong>Email:</strong> {driver.email}</p>
+        <p><strong>License:</strong> {driver.licenseNumber}</p>
+      </CCardBody>
+    </CCard>
   );
 };
 

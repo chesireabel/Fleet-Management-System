@@ -1,0 +1,38 @@
+/* LandingPage.css */
+
+/* Hero Section Background */
+.hero {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    padding: 100px 0;
+  }
+  
+  /* Features Section Background */
+  .features {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  }
+  
+  /* Feature Card Hover Animation */
+  .feature-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Dashboard Preview Section Background */
+  .dashboard-preview {
+    background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+  }
+  
+  /* Testimonials Section Background */
+  .testimonials {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  }
+  
+  /* Footer Background */
+  .footer {
+    background: #1e3c72;
+  }

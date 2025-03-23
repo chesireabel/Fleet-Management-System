@@ -1,6 +1,9 @@
 import React from 'react'
 import { Suspense } from 'react'
 import { CSpinner } from '@coreui/react'
+import LandingPage from './views/pages/landingPage'
+import Login from './views/pages/login'
+import Signup from './views/pages/signup'
 
 // Lazy-loaded components
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
@@ -24,8 +27,18 @@ const routes = [
   { 
     path: '/',
     index: true,
-    name: 'Home',
-    element: withSuspense(Dashboard)
+    name: 'Landing Page',
+    element: withSuspense(LandingPage)
+  },
+  { 
+    path: '/login',
+    name: 'Login',
+    element: withSuspense(Login)
+  },
+  { 
+    path: '/signup',
+    name: 'Signup',
+    element: withSuspense(Signup)
   },
   { 
     path: '/dashboard',
@@ -53,7 +66,7 @@ const routes = [
     element: withSuspense(Drivers)
   },
   { 
-    path: '/driver', 
+    path: '/driver/*', 
     name: 'Driver Dashboard',
     element: withSuspense(DriverPage)
   },
