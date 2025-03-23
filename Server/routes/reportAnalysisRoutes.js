@@ -1,19 +1,30 @@
+// routes/reportRoutes.js
 import express from 'express';
-import {
-    createReportAnalysis,
-    getAllReportAnalysis,
-    getReportAnalysisById,
-    updateReportAnalysis,
-    deleteReportAnalysis,
-} from '../controllers/reportAnalysisController.js';
+import { generateReport } from '../controllers/reportAnalysisController.js';
 
 const router = express.Router();
 
-// Routes
-router.post('/', createReportAnalysis);
-router.get('/', getAllReportAnalysis);
-router.get('/:reportId', getReportAnalysisById);
-router.put('/:reportId', updateReportAnalysis);
-router.delete('/:reportId', deleteReportAnalysis);
+// GET /api/reports
+router.get(
+    '/',
+    generateReport
+);
+
+// GET /api/reports/:id
+router.get('/:id', async (req, res) => {
+    try {
+        const report = await BaseReport.findById(req.params.id)
+            .populate('metadata.requestedBy', 'name email')
+            .lean();
+
+        if (!report) {
+            return res.status(404).json({ error: 'Report not found' });
+        }
+
+        res.json(report);
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 export default router;

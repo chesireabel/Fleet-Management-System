@@ -1,28 +1,31 @@
 import express from 'express';
 import {
     createTrip,
+    completeTrip,
     getAllTrips,
     getTripById,
     updateTrip,
     deleteTrip,
     validateTrip,
 } from '../controllers/tripController.js';
+import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Create a new trip
-router.post('/', validateTrip, createTrip);
+/**
+ * Manager-only routes
+ * These routes require the authenticated user to have the "fleet_manager" role.
+ */
+router.post('/', authenticate, authorize('fleet_manager'), validateTrip, createTrip); // Create a new trip
+router.get('/', authenticate, authorize('fleet_manager'), getAllTrips); // Get all trips with pagination
+router.get('/:tripId', authenticate, authorize('fleet_manager','driver'), getTripById); // Get a specific trip by ID
+router.patch('/:tripId', authenticate, authorize('fleet_manager'), validateTrip, updateTrip); // Update a trip record (partial updates)
+router.delete('/:tripId', authenticate, authorize('fleet_manager'), deleteTrip); // Delete a trip record
 
-// Get all trips
-router.get('/', getAllTrips);
-
-// Get a specific trip by ID
-router.get('/trips/:tripId', getTripById);
-
-// Update a trip by ID
-router.patch('/:tripId', validateTrip, updateTrip);
-
-// Delete a trip by ID
-router.delete('/:tripId', deleteTrip);
+/**
+ * Driver-only route
+ * This route allows a driver to mark a trip as completed.
+ */
+router.put('/:tripId/complete', authenticate, authorize('driver'), completeTrip); // Complete a trip
 
 export default router;

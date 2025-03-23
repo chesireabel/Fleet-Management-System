@@ -19,7 +19,21 @@ const vehicleSchema = new mongoose.Schema({
     vehicleHealth: { type: String, enum: ['Excellent', 'Good', 'Fair', 'Poor'], default: 'Good' },
     createdAt: { type: Date, default: Date.now },
 
-});
+    usageMetrics: [{
+        date: Date,
+        startOdometer: Number,
+        endOdometer: Number,
+        fuelUsed: Number,
+        engineHours: Number
+      }],
+      maintenanceHistory: [{
+        date: Date,
+        serviceType: String,
+        cost: Number,
+        description: String
+      }]
+    });
+
 
 const Vehicle = mongoose.model('Vehicle', vehicleSchema);
 

@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema({
     enum: ['fleet_manager', 'driver', 'maintenance_team', 'finance_team', 'senior_management'],
     required: [true, 'Role is required'],
   },
+  refreshToken: {
+    type: String,
+    select: false, 
+  },
   createdAt: {
     type: Date,
     default: Date.now,

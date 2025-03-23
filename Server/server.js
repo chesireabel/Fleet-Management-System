@@ -9,6 +9,7 @@ import tripRoutes from './routes/tripRoutes.js';
 import maintenaceRoutes from './routes/maintenaceRoutes.js';
 import reportAnalysisRoutes from './routes/reportAnalysisRoutes.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
+import { authenticate } from './middleware/authMiddleware.js'; ;
 
 // Load environment variables
 dotenv.config();
@@ -19,10 +20,9 @@ const app = express();
 // Middleware
 app.use(cors({
     origin: "http://localhost:5173", 
-    methods: "GET,POST,PUT,DELETE",
+    methods: "GET,POST,PUT,PATCH,DELETE",
     credentials: true
   }));
-
   app.use(express.json()); // Parse JSON request bodies
 
 // Database connection
@@ -33,6 +33,7 @@ app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the Fleet Management API' });
 });
 
+
 // API Routes
 app.use('/uploads', express.static('uploads'));
 app.use('/users', userRoutes);
@@ -40,10 +41,11 @@ app.use('/vehicles', vehicleRoutes);
 app.use('/drivers', driverRoutes);
 app.use('/trips', tripRoutes);
 app.use('/maintenance', maintenaceRoutes);
-app.use('/reportanalysis', reportAnalysisRoutes);
+app.use('/reports',reportAnalysisRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
+
 
 // Start the server
 const PORT = process.env.PORT || 3000;

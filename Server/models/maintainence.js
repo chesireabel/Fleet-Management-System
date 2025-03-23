@@ -12,6 +12,4 @@ const maintenanceRecordSchema = new Schema({
 });
 
 const MaintenanceRecord = model('MaintenanceRecord', maintenanceRecordSchema);
-
 export default MaintenanceRecord;
-

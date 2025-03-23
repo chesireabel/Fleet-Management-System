@@ -3,7 +3,6 @@ import MaintenanceRecord from '../models/maintainence.js';
 
 // Utility function to handle errors
 const handleError = (res, error, statusCode = 400) => {
-    logger.error(error.message); // Log the error
     res.status(statusCode).json({ success: false, error: error.message });
 };
 
@@ -46,7 +45,6 @@ export const createMaintenance = async (req, res) => {
         });
 
         await maintenance.save();
-        logger.info(`Maintenance record created for vehicle: ${vehicle}`);
         res.status(201).json({ success: true, data: maintenance });
     } catch (err) {
         handleError(res, err);

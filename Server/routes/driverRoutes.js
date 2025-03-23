@@ -1,29 +1,27 @@
-import express from 'express';
+
 import upload from '../config/multer.js';
+import express from 'express';
 import {
+    validateDriver,
     createDriver,
     getAllDrivers,
+    getAllDriversWithoutPagination,
     getDriverById,
     updateDriver,
-    deleteDriver,
-    validateDriver,
+    deleteDriver
+    
 } from '../controllers/driverController.js';
 
 const router = express.Router();
 
-// Route to create a new driver
+// Existing routes
 router.post('/', upload.single("profilePicture"),validateDriver, createDriver);
+router.get('/', getAllDrivers); // Get all drivers
+router.get('/all', getAllDriversWithoutPagination);
+router.get('/:driverId', getDriverById); // Get a specific driver by ID
+router.patch('/:driverId', validateDriver, updateDriver); // Update a driver
+router.delete('/:driverId', deleteDriver); // Delete a driver
 
-// Route to get all drivers (with pagination)
-router.get('/', getAllDrivers);
 
-// Route to get a specific driver by ID
-router.get('/:driverId', getDriverById);
-
-// Route to update a driver by ID
-router.put('/:driverId', validateDriver, updateDriver);
-
-// Route to delete a driver by ID
-router.delete('/:driverId', deleteDriver);
 
 export default router;

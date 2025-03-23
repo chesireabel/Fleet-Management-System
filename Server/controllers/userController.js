@@ -50,6 +50,8 @@ export const registerUser = async (req, res) => {
             role,
         });
 
+        console.log('New User:', newUser);
+
         // Generate JWT token
         const token = jwt.sign(
             { id: newUser._id, role: newUser.role },
@@ -63,6 +65,7 @@ export const registerUser = async (req, res) => {
         res.status(201).json({
             status: 'success',
             token,
+            role: newUser.role, // Include the role in the response
             data: {
                 user: newUser,
             },
@@ -111,12 +114,16 @@ export const loginUser = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
 
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('Decoded Token:', decodedToken);
+
         // Remove sensitive data from response
         user.password = undefined;
 
         res.status(200).json({
             status: 'success',
             token,
+            role: user.role, // Include the role in the response
             data: {
                 user,
             },
