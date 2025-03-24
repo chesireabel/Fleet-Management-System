@@ -1,23 +1,17 @@
 import mongoose from "mongoose";
 
 const driverSchema = new mongoose.Schema(
+  
   {
+    user: { type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true },
+
     profilePicture: {
       type: String,
       default: "",
     },
-    firstName: {
-      type: String,
-      required: [true, "First name is required"],
-      trim: true,
-      maxlength: [50, "First name cannot exceed 50 characters"],
-    },
-    lastName: {
-      type: String,
-      required: [true, "Last name is required"],
-      trim: true,
-      maxlength: [50, "Last name cannot exceed 50 characters"],
-    },
+   
     phone: {
       type: String,
       required: [true, "Phone number is required"],
@@ -35,17 +29,7 @@ const driverSchema = new mongoose.Schema(
       maxlength: [20, "License number cannot exceed 20 characters"],
       index: true,
     },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      match: [
-        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        "Invalid email format",
-      ],
-    },
+   
     dateOfBirth: {
       type: Date,
       required: [true, "Date of birth is required"],
@@ -87,7 +71,20 @@ const driverSchema = new mongoose.Schema(
 );
 
 // Compound index for frequently searched fields
-driverSchema.index({ firstName: 1, lastName: 1 });
+driverSchema.virtual('firstName').get(function() {
+  return this.user?.firstName;
+});
+
+driverSchema.virtual('lastName').get(function() {
+  return this.user?.lastName;
+});
+
+driverSchema.virtual('email').get(function() {
+  return this.user?.email;
+});
+
+// Compound index
+driverSchema.index({ "user.firstName": 1, "user.lastName": 1 });
 
 const Driver = mongoose.model("Driver", driverSchema);
 export default Driver;

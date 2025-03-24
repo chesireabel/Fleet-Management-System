@@ -265,11 +265,11 @@ const Trips = () => {
           })
         ]);
         console.log("Trips Data:", tripsRes.data);
-        setTrips(tripsRes.data.data.trips || []);
-        setTotalTrips(tripsRes.data.data.totalTrips || 0);
-        setDrivers(driversRes.data.data.drivers || []);
-        setVehicles(vehiclesRes.data.data.vehicles || []);
-      } catch (error) {
+        setTrips(tripsRes.data?.data?.trips || tripsRes.data?.trips || []);
+        setTotalTrips(tripsRes.data?.data?.totalTrips || tripsRes.data?.totalTrips || 0);
+        setDrivers(driversRes.data?.data?.drivers || driversRes.data?.drivers || []);
+        setVehicles(vehiclesRes.data?.data?.vehicles || vehiclesRes.data?.vehicles || []);
+            } catch (error) {
         console.error('Error fetching data:', error);
         showAlert(`Error fetching data: ${error.message}`, 'danger');
       } finally {
@@ -449,8 +449,10 @@ const Trips = () => {
                 <CTableBody>
                   {trips.map((trip) => (
                     <CTableRow key={trip._id}>
-                      <CTableDataCell>{trip.driver?`${trip.driver.firstName || ''} ${trip.driver.lastName || 'N/A'}` : 'No Driver Assigned'}</CTableDataCell>
-                      <CTableDataCell>{trip.vehicle?.registrationNumber || 'N/A'}</CTableDataCell>
+                      <CTableDataCell>{trip.driver?`${trip.driver.firstName || ''} ${trip.driver.lastName || ''}`.trim() || 'N/A'
+                       : 'No Driver Assigned'}</CTableDataCell>
+                      <CTableDataCell>{trip.vehicle?trip.vehicle.registrationNumber || 'N/A'
+                      : 'N/A'}</CTableDataCell>
                       <CTableDataCell>{trip.startLocation}</CTableDataCell>
                       <CTableDataCell>{trip.endLocation}</CTableDataCell>
                       <CTableDataCell>

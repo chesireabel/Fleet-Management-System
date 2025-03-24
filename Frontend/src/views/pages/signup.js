@@ -24,114 +24,106 @@ import {
 function Signup() {
   const navigate = useNavigate();
 
-  // State to manage form inputs
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     role: '',
     agreeToTerms: false,
   });
 
-  // State to manage validation errors
   const [errors, setErrors] = useState({});
-
-  // State to control modal visibility and messages
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [modalType, setModalType] = useState('success');
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
     });
-    setErrors({ ...errors, [name]: '' }); // Clear errors when the user types
+    setErrors({ ...errors, [name]: '' });
   };
 
-  // Validate form inputs
   const validateForm = () => {
     const newErrors = {};
 
-    // Name validation
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    } else if (formData.name.length > 100) {
-      newErrors.name = 'Name cannot exceed 100 characters';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.length > 50) {
+      newErrors.firstName = 'First name cannot exceed 50 characters';
     }
 
-    // Email validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.length > 50) {
+      newErrors.lastName = 'Last name cannot exceed 50 characters';
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email address';
     }
 
-    // Password validation
     if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
 
-    // Role validation
     if (!formData.role) {
       newErrors.role = 'Role is required';
     }
 
-    // Terms and Conditions validation
     if (!formData.agreeToTerms) {
       newErrors.agreeToTerms = 'You must agree to the terms and conditions';
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; // Return true if no errors
+    return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const response = await axios.post('http://localhost:3000/users/register', formData);
+        const response = await axios.post('http://localhost:3000/users/register', {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role
+        });
 
-        // Show success modal
         setModalMessage('Registration successful! Please login.');
         setModalType('success');
         setIsModalOpen(true);
 
-        // Clear form data
         setFormData({
-          name: '',
+          firstName: '',
+          lastName: '',
           email: '',
           password: '',
           role: '',
           agreeToTerms: false,
         });
 
-        console.log('Signup successful:', response.data);
       } catch (error) {
-        console.error('Signup failed:', error.response?.data || error.message);
-
-        // Show error modal
-        if (error.response?.data.message) {
-          setModalMessage(error.response.data.message);
-        } else {
-          setModalMessage('An error occurred during signup. Please try again.');
-        }
+        const errorMessage = error.response?.data?.message || 'An error occurred during signup. Please try again.';
+        setModalMessage(errorMessage);
         setModalType('error');
         setIsModalOpen(true);
       }
     }
   };
 
-  // Close the modal and redirect to the login page
   const closeModal = () => {
     setIsModalOpen(false);
     if (modalType === 'success') {
-      navigate('/login'); // Redirect to the login page after successful signup
+      navigate('/login');
     }
   };
 
@@ -141,18 +133,32 @@ function Signup() {
         <CCardBody>
           <h2 className="text-center mb-4">Sign Up</h2>
           <CForm onSubmit={handleSubmit}>
-            {/* Name */}
+            {/* First Name */}
             <div className="mb-3">
-              <CFormLabel>Name</CFormLabel>
+              <CFormLabel>First Name</CFormLabel>
               <CFormInput
                 type="text"
-                name="name"
-                placeholder="Enter your name"
-                value={formData.name}
+                name="firstName"
+                placeholder="Enter your first name"
+                value={formData.firstName}
                 onChange={handleChange}
-                invalid={!!errors.name}
+                invalid={!!errors.firstName}
               />
-              {errors.name && <CAlert color="danger">{errors.name}</CAlert>}
+              {errors.firstName && <CAlert color="danger">{errors.firstName}</CAlert>}
+            </div>
+
+            {/* Last Name */}
+            <div className="mb-3">
+              <CFormLabel>Last Name</CFormLabel>
+              <CFormInput
+                type="text"
+                name="lastName"
+                placeholder="Enter your last name"
+                value={formData.lastName}
+                onChange={handleChange}
+                invalid={!!errors.lastName}
+              />
+              {errors.lastName && <CAlert color="danger">{errors.lastName}</CAlert>}
             </div>
 
             {/* Email */}
@@ -202,7 +208,7 @@ function Signup() {
               {errors.role && <CAlert color="danger">{errors.role}</CAlert>}
             </div>
 
-            {/* Agree to Terms and Conditions */}
+            {/* Terms Checkbox */}
             <div className="mb-3">
               <CFormCheck
                 type="checkbox"
@@ -215,7 +221,6 @@ function Signup() {
               {errors.agreeToTerms && <CAlert color="danger">{errors.agreeToTerms}</CAlert>}
             </div>
 
-            {/* Submit Button */}
             <div className="d-grid">
               <CButton type="submit" color="primary">
                 Sign Up
@@ -225,7 +230,6 @@ function Signup() {
         </CCardBody>
       </CCard>
 
-      {/* Modal for success/error messages */}
       <CModal visible={isModalOpen} onClose={closeModal}>
         <CModalHeader>
           <CModalTitle>{modalType === 'success' ? 'Success' : 'Error'}</CModalTitle>

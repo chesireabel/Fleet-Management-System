@@ -22,6 +22,7 @@ import {
   CAlert,
   CForm,
   CFormInput,
+  CFormSelect,
   CFormCheck,
   CFormLabel,
   CInputGroup,
@@ -37,6 +38,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 const Drivers = () => {
   const [state, setState] = useState({
     drivers: [],
+    users: [], // Stores users with 'driver' role
     loading: false,
     error: '',
     success: '',
@@ -44,15 +46,12 @@ const Drivers = () => {
     editingDriver: null,
     isSubmitting: false,
     formData: {
-      firstName: '',
-      lastName: '',
-      phone: '',
+      userId: '', 
       licenseNumber: '',
-      email: '',
+      phone: '',
       dateOfBirth: '',
       drivingScore: 0,
       activeStatus: true,
-      // Using YYYY-MM-DD format for date inputs
       hireDate: new Date().toISOString().split('T')[0],
       profilePicture: null,
     },
@@ -63,15 +62,19 @@ const Drivers = () => {
   const isMounted = useRef(true);
   const abortControllerRef = useRef();
 
-  // Fetch drivers from the API
-  const fetchDrivers = useCallback(async () => {
+  // Fetch drivers and users with 'driver' role
+  const fetchData = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: '' }));
     try {
-      const response = await axios.get(`${API_URL}/drivers`);
+      const [driversRes, usersRes] = await Promise.all([
+        axios.get(`${API_URL}/drivers`),
+        axios.get(`${API_URL}/users?role=driver`), 
+      ]);
       if (isMounted.current) {
         setState((prev) => ({
           ...prev,
-          drivers: response.data.data?.drivers || [],
+          drivers: driversRes.data.data?.drivers || [],
+          users: usersRes.data.data?.users || [],
           loading: false,
         }));
       }
@@ -79,21 +82,26 @@ const Drivers = () => {
       if (isMounted.current) {
         setState((prev) => ({
           ...prev,
-          error: err.response?.data?.message || 'Failed to load drivers',
+          error: err.response?.data?.message || 'Failed to load data',
           loading: false,
         }));
       }
     }
   }, []);
+  useEffect(() => {
+    console.log("Fetched Users:", state.users);
+    console.log("Fetched Drivers:", state.drivers);
+  }, [state.users, state.drivers]);
+  
 
   useEffect(() => {
     isMounted.current = true;
-    fetchDrivers();
+    fetchData();
     return () => {
       isMounted.current = false;
       abortControllerRef.current?.abort();
     };
-  }, [fetchDrivers]);
+  }, [fetchData]);
 
   // Clear success message after 3 seconds
   useEffect(() => {
@@ -121,7 +129,6 @@ const Drivers = () => {
         drivers: prev.drivers.filter((d) => d._id !== deleteConfirmation.driverId),
         success: 'Driver deleted successfully',
       }));
-      fetchDrivers();
     } catch (err) {
       setState((prev) => ({
         ...prev,
@@ -148,30 +155,6 @@ const Drivers = () => {
     }));
   };
 
-  // Create driver using multipart/form-data
-  const handleCreateDriver = async (data) => {
-    try {
-      const response = await axios.post(`${API_URL}/drivers`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  // Update driver using multipart/form-data
-  const handleUpdateDriver = async (driverId, data) => {
-    try {
-      const response = await axios.put(`${API_URL}/drivers/${driverId}`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const controller = new AbortController();
@@ -182,13 +165,12 @@ const Drivers = () => {
       const { editingDriver, formData } = state;
       const data = new FormData();
 
-      // Append all fields to FormData
+      // Append fields (userId instead of firstName/lastName/email)
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (key === 'profilePicture' && value instanceof File) {
             data.append(key, value, value.name);
           } else if (key === 'dateOfBirth' || key === 'hireDate') {
-            // Convert date fields to ISO strings
             data.append(key, new Date(value).toISOString());
           } else {
             data.append(key, value);
@@ -196,84 +178,196 @@ const Drivers = () => {
         }
       });
 
-      // Debug: Log FormData entries
-      for (let [key, value] of data.entries()) {
-        console.log(key, value);
-      }
-
-      
-    const config = {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      signal: controller.signal,
-    };
-
+      const config = {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        signal: controller.signal,
+      };
 
       let response;
       if (editingDriver) {
         response = await axios.put(`${API_URL}/drivers/${editingDriver._id}`, data, config);
-            } else {
-          response = await axios.post(`${API_URL}/drivers`, data, config);      }
+      } else {
+        response = await axios.post(`${API_URL}/drivers`, data, config);
+      }
 
       setState((prev) => ({
         ...prev,
         modalVisible: false,
         success: `Driver ${editingDriver ? 'updated' : 'created'} successfully!`,
         isSubmitting: false,
-        // Reset form fields; note the consistent YYYY-MM-DD format for dates
         formData: {
-          firstName: '',
-          lastName: '',
+          userId: '',
+          licenseNumber: '',
           phone: '',
-          licenseNumber:'',
-          email: '',
           dateOfBirth: '',
           drivingScore: 0,
           activeStatus: true,
-          hireDate: '',
+          hireDate: new Date().toISOString().split('T')[0],
           profilePicture: null,
         },
         editingDriver: null,
       }));
 
-      fetchDrivers();
+      fetchData();
     } catch (error) {
       if (isMounted.current && !axios.isCancel(error)) {
-        console.error('Backend Error:', error.response?.data); 
         setState((prev) => ({
           ...prev,
-          error: error.response?.data?.message || 'Operation failed. Please check your inputs.',
+          error: error.response?.data?.message || 'Operation failed. Check the user exists with driver role.',
           isSubmitting: false,
         }));
       }
     }
   };
-
-  const filteredDrivers = state.drivers.filter((driver) =>
-    `${driver.firstName || ''} ${driver.lastName || ''}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
-
-  // When modal is opened for editing, populate formData with driver's data
+  const filteredDrivers = state.drivers.map((driver) => {
+    const user = driver.user?._id 
+    ? state.users.find(u => u._id === driver.user._id) // Handle populated user
+    : state.users.find(u => u._id === driver.user); // Handle unpopulated
+  
+    console.log(`Driver ${driver._id} user:`, driver.user);
+    console.log(`Found user:`, user); 
+    return {
+      ...driver,
+      userDetails: user ? {
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email
+      } : null
+    };
+  }).filter(driver => {
+    const searchString = driver.userDetails
+      ? `${driver.userDetails,name} ${driver.userDetails.email}`.toLowerCase()
+      : '';
+    return searchString.includes(searchTerm.toLowerCase());
+  });
+  // Prepopulate form when editing
   useEffect(() => {
     if (state.modalVisible && state.editingDriver) {
+      const selectedUser = state.users.find(
+        user => user._id === state.editingDriver.user
+      );
       setState((prev) => ({
         ...prev,
         formData: {
-          ...state.editingDriver,
-          // Ensure the profilePicture remains a string if it exists
-          profilePicture: state.editingDriver.profilePicture || null,
-          // Format dates to YYYY-MM-DD for date inputs
+          userId: selectedUser?._id || '',
+          licenseNumber: state.editingDriver.licenseNumber,
+          phone: state.editingDriver.phone,
           dateOfBirth: state.editingDriver.dateOfBirth
             ? new Date(state.editingDriver.dateOfBirth).toISOString().split('T')[0]
             : '',
+          drivingScore: state.editingDriver.drivingScore,
+          activeStatus: state.editingDriver.activeStatus,
           hireDate: state.editingDriver.hireDate
             ? new Date(state.editingDriver.hireDate).toISOString().split('T')[0]
             : new Date().toISOString().split('T')[0],
+          profilePicture: state.editingDriver.profilePicture || null,
         },
       }));
     }
-  }, [state.modalVisible, state.editingDriver]);
+  }, [state.modalVisible, state.editingDriver, state.users]);
+  
+  const renderDriverRow = (driver) => {
+    const user = state.users.find(u => u._id === driver.user);
+    return(
+      <React.Fragment key={driver._id}>
+      <CTableRow>
+        <CTableDataCell>
+          <CButton
+            color="link"
+            onClick={() => setExpandedDriver(prev => prev === driver._id ? null : driver._id)}
+          >
+            <CIcon icon={expandedDriver === driver._id ? cilChevronTop : cilChevronBottom} />
+          </CButton>
+        </CTableDataCell>
+        
+        <CTableDataCell>
+          <div className="d-flex align-items-center">
+            {driver.profilePicture && (
+              <CImage
+                thumbnail
+                src={driver.profilePicture}
+                width={50}
+                className="me-3"
+              />
+            )}
+            <div>
+              {driver.userDetails ? (
+                <>
+                  <strong>{driver.userDetails.name}</strong>
+                  <div className="small text-muted">{driver.userDetails.email}</div>
+                </>
+              ) : (
+                <span className="text-danger">Driver not found</span>
+              )}
+            </div>
+          </div>
+        </CTableDataCell>
+
+        <CTableDataCell>{driver.licenseNumber}</CTableDataCell>
+        <CTableDataCell>{driver.phone}</CTableDataCell>
+        <CTableDataCell>
+          <CBadge color={driver.activeStatus ? 'success' : 'danger'}>
+            {driver.activeStatus ? 'Active' : 'Inactive'}
+          </CBadge>
+        </CTableDataCell>
+        
+        <CTableDataCell>
+          <CButton
+            color="warning"
+            variant="outline"
+            size="sm"
+            className="me-2"
+            onClick={() => setState(prev => ({
+              ...prev,
+              editingDriver: driver,
+              modalVisible: true,
+            }))}
+          >
+            <CIcon icon={cilPencil} />
+          </CButton>
+          <CButton
+            color="danger"
+            variant="outline"
+            size="sm"
+            onClick={() => setDeleteConfirmation({ show: true, driverId: driver._id })}
+          >
+            <CIcon icon={cilTrash} />
+          </CButton>
+        </CTableDataCell>
+      </CTableRow>
+
+      <CTableRow>
+        <CTableDataCell colSpan={6} className="p-0">
+          <CCollapse visible={expandedDriver === driver._id}>
+            <div className="p-3 bg-light">
+              <CRow>
+                <CCol md={3}>
+                  <strong>Date of Birth:</strong>
+                  <div>
+                    {driver.dateOfBirth
+                      ? new Date(driver.dateOfBirth).toLocaleDateString()
+                      : 'N/A'}
+                  </div>
+                </CCol>
+                <CCol md={3}>
+                  <strong>Hire Date:</strong>
+                  <div>
+                    {driver.hireDate
+                      ? new Date(driver.hireDate).toLocaleDateString()
+                      : 'N/A'}
+                  </div>
+                </CCol>
+                <CCol md={3}>
+                  <strong>Driving Score:</strong>
+                  <div>{driver.drivingScore}/100</div>
+                </CCol>
+              </CRow>
+            </div>
+          </CCollapse>
+        </CTableDataCell>
+      </CTableRow>
+    </React.Fragment>
+  );
+  };
 
   return (
     <CRow>
@@ -289,11 +383,9 @@ const Drivers = () => {
                   modalVisible: true,
                   editingDriver: null,
                   formData: {
-                    firstName: '',
-                    lastName: '',
+                    userId: '',
+                    licenseNumber: '',
                     phone: '',
-                    licenseNumber:'',
-                    email: '',
                     dateOfBirth: '',
                     drivingScore: 0,
                     activeStatus: true,
@@ -302,6 +394,7 @@ const Drivers = () => {
                   },
                 }))
               }
+              disabled={state.users.length === 0}
             >
               <CIcon icon={cilPlus} className="me-2" />
               Add Driver
@@ -309,6 +402,9 @@ const Drivers = () => {
           </CCardHeader>
 
           <CCardBody>
+            {state.users.length === 0 && (
+              <CAlert color="warning">No users with driver role found. Create a user first.</CAlert>
+            )}
             <div className="mb-4 position-relative" style={{ maxWidth: '300px' }}>
               <CFormInput
                 placeholder="Search drivers..."
@@ -338,118 +434,7 @@ const Drivers = () => {
                     </CTableDataCell>
                   </CTableRow>
                 ) : (
-                  filteredDrivers.map((driver) => (
-                    <React.Fragment key={driver._id}>
-                      <CTableRow>
-                        <CTableDataCell>
-                          <CButton
-                            color="link"
-                            onClick={() => toggleDriverDetails(driver._id)}
-                          >
-                            <CIcon
-                              icon={
-                                expandedDriver === driver._id
-                                  ? cilChevronTop
-                                  : cilChevronBottom
-                              }
-                            />
-                          </CButton>
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          <div className="d-flex align-items-center">
-                            {driver.profilePicture && (
-                              <CImage
-                                thumbnail
-                                src={driver.profilePicture}
-                                width={50}
-                                className="me-3"
-                              />
-                            )}
-                            <div>
-                              {driver.firstName} {driver.lastName}
-                              <div className="small text-muted">{driver.email}</div>
-                            </div>
-                          </div>
-                        </CTableDataCell>
-                        <CTableDataCell>{driver.licenseNumber}</CTableDataCell>
-                        <CTableDataCell>{driver.phone}</CTableDataCell>
-                        <CTableDataCell>
-                          <CBadge color={driver.activeStatus ? 'success' : 'danger'}>
-                            {driver.activeStatus ? 'Active' : 'Inactive'}
-                          </CBadge>
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          <CButton
-                            color="warning"
-                            variant="outline"
-                            size="sm"
-                            className="me-2"
-                            onClick={() =>
-                              setState((prev) => ({
-                                ...prev,
-                                editingDriver: driver,
-                                modalVisible: true,
-                              }))
-                            }
-                          >
-                            <CIcon icon={cilPencil} />
-                          </CButton>
-                          <CButton
-                            color="danger"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteConfirmation(driver._id)}
-                          >
-                            <CIcon icon={cilTrash} />
-                          </CButton>
-                        </CTableDataCell>
-                      </CTableRow>
-                      <CTableRow>
-                        <CTableDataCell colSpan={6} className="p-0">
-                          <CCollapse visible={expandedDriver === driver._id}>
-                            <div className="p-3 bg-light">
-                              <CRow>
-                                <CCol md={3}>
-                                  <strong>Date of Birth:</strong>
-                                  <div>
-                                    {driver.dateOfBirth
-                                      ? new Date(driver.dateOfBirth).toLocaleDateString()
-                                      : 'N/A'}
-                                  </div>
-                                </CCol>
-                                <CCol md={3}>
-                                  <strong>Hire Date:</strong>
-                                  <div>
-                                    {driver.hireDate
-                                      ? new Date(driver.hireDate).toLocaleDateString()
-                                      : 'N/A'}
-                                  </div>
-                                </CCol>
-                                <CCol md={3}>
-                                  <strong>Driving Score:</strong>
-                                  <div>{driver.drivingScore}/100</div>
-                                </CCol>
-                                <CCol md={3}>
-                                  <strong>License Expiry:</strong>
-                                  <div>{driver.licenseExpiry || 'N/A'}</div>
-                                </CCol>
-                                <CCol md={12} className="mt-3">
-                                  {driver.profilePicture && (
-                                    <CImage
-                                      src={driver.profilePicture}
-                                      fluid
-                                      className="img-thumbnail"
-                                      style={{ maxWidth: '200px' }}
-                                    />
-                                  )}
-                                </CCol>
-                              </CRow>
-                            </div>
-                          </CCollapse>
-                        </CTableDataCell>
-                      </CTableRow>
-                    </React.Fragment>
-                  ))
+                  filteredDrivers.map(renderDriverRow)
                 )}
               </CTableBody>
             </CTable>
@@ -472,20 +457,28 @@ const Drivers = () => {
           <CModalBody>
             <CForm onSubmit={handleSubmit}>
               <CRow className="g-3">
-                <CCol md={6}>
-                  <CFormInput
-                    label="First Name"
-                    name="firstName"
-                    value={state.formData.firstName}
+                <CCol md={12}>
+                  <CFormSelect
+                    label="Select User (Driver Role)"
+                    name="userId"
+                    value={state.formData.userId}
                     onChange={handleInputChange}
                     required
-                  />
+                    disabled={!!state.editingDriver}
+                  >
+                    <option value="">Select a user</option>
+                    {state.users.map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.firstName} {user.lastName} ({user.email})
+                      </option>
+                    ))}
+                  </CFormSelect>
                 </CCol>
                 <CCol md={6}>
                   <CFormInput
-                    label="Last Name"
-                    name="lastName"
-                    value={state.formData.lastName}
+                    label="License Number"
+                    name="licenseNumber"
+                    value={state.formData.licenseNumber}
                     onChange={handleInputChange}
                     required
                   />
@@ -502,29 +495,20 @@ const Drivers = () => {
                 </CCol>
                 <CCol md={6}>
                   <CFormInput
-                    label="License Number"
-                    name="licenseNumber"
-                    value={state.formData.licenseNumber}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </CCol>
-                <CCol md={6}>
-                  <CFormInput
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={state.formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </CCol>
-                <CCol md={6}>
-                  <CFormInput
                     label="Date of Birth"
                     name="dateOfBirth"
                     type="date"
                     value={state.formData.dateOfBirth}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </CCol>
+                <CCol md={6}>
+                  <CFormInput
+                    label="Hire Date"
+                    name="hireDate"
+                    type="date"
+                    value={state.formData.hireDate}
                     onChange={handleInputChange}
                     required
                   />
@@ -537,16 +521,6 @@ const Drivers = () => {
                     min="0"
                     max="100"
                     value={state.formData.drivingScore}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </CCol>
-                <CCol md={6}>
-                  <CFormInput
-                    label="Hire Date"
-                    name="hireDate"
-                    type="date"
-                    value={state.formData.hireDate}
                     onChange={handleInputChange}
                     required
                   />

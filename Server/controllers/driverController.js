@@ -1,13 +1,15 @@
 import { body, validationResult } from 'express-validator';
 import Driver from '../models/driver.js';
+import User from '../models/User.js'; 
+
 
 // Validation middleware for driver data
 export const validateDriver = [
-  body('firstName').notEmpty().withMessage('First name is required').trim().isLength({ max: 50 }).withMessage('First name cannot exceed 50 characters'),
-  body('lastName').notEmpty().withMessage('Last name is required').trim().isLength({ max: 50 }).withMessage('Last name cannot exceed 50 characters'),
+  body('userId')
+  .notEmpty().withMessage('User ID is required')
+  .isMongoId().withMessage('Invalid User ID format'),
   body('phone').notEmpty().withMessage('Phone number is required').matches(/^\+?(\d[\d-. ]+)?(\([\d-. ]+\))?[\d-. ]+\d$/).withMessage('Invalid phone number format'),
   body('licenseNumber').notEmpty().withMessage('License number is required').isLength({ min: 8, max: 20 }).withMessage('License number must be between 8 and 20 characters'),
-  body('email').notEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
   body('dateOfBirth').notEmpty().withMessage('Date of birth is required').isISO8601().withMessage('Invalid date format. Use YYYY-MM-DD or ISO 8601 format.'),
   body('hireDate').notEmpty().withMessage('Hire date is required').isISO8601().withMessage('Invalid date format. Use YYYY-MM-DD or ISO 8601 format.'),// Ensure the date is in ISO 8601 format.withMessage('Invalid date format. Use YYYY-MM-DD or ISO 8601 format.'),  
   body('drivingScore').optional().isInt({ min: 0, max: 100 }).withMessage('Driving score must be between 0 and 100'),
@@ -15,62 +17,69 @@ export const validateDriver = [
   
 ];
 
-// Create a new driver
+// Create a new driver (corrected)
 export const createDriver = async (req, res) => {
-    console.log('Request Body:', req.body);
+  console.log('Request Body:', req.body);
   try {
-    // Validate request body
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        console.log('Validation Errors:', errors.array()); // Log validation errors
-        return res.status(400).json({ status: 'fail', message: 'Validation failed', errors: errors.array() });
-      }
-  
+      console.log('Validation Errors:', errors.array());
+      return res.status(400).json({ status: 'fail', message: 'Validation failed', errors: errors.array() });
+    }
 
-    // Extract fields from request body
-    const { firstName, lastName, licenseNumber, phone, email, dateOfBirth, drivingScore, activeStatus, hireDate } = req.body;
+    const { userId,licenseNumber, phone,  dateOfBirth, drivingScore, activeStatus, hireDate } = req.body;
 
-    // Handle file upload
+    const user = await User.findOne({ _id:userId , role: 'driver' });
+    if (!user) {
+      return res.status(404).json({ status: 'fail', message: 'Selected user is not a driver or does not exist' });
+    }
+
     const profilePicture = req.file ? `/uploads/${req.file.filename}` : '';
 
-    // Create new driver
     const driver = new Driver({
-      firstName,
-      lastName,
+      user: userId,        
       phone,
       licenseNumber,
-      email,
-      dateOfBirth: new Date(dateOfBirth), // Convert to Date object
+      dateOfBirth: new Date(dateOfBirth),
       drivingScore,
       activeStatus,
-      hireDate: new Date(hireDate), // Convert to Date object
+      hireDate: new Date(hireDate),
       profilePicture,
     });
 
-    // Save driver to database
     await driver.save();
 
-    // Return success response
+    const driverWithUser = {
+      ...driver.toObject(),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email
+    };
+
     res.status(201).json({
       status: 'success',
-      data: { driver },
+      data: { driver: driverWithUser }
     });
   } catch (err) {
     console.error('Error creating driver:', err);
     if (err.name === 'ValidationError') {
-    console.log('Mongoose Validation Errors:', err.errors); 
+      console.log('Mongoose Validation Errors:', err.errors); 
       return res.status(400).json({ status: 'fail', message: 'Validation failed', errors: err.errors });
     }
     res.status(500).json({ status: 'error', message: 'Internal server error', error: err.message });
   }
 };
 
-// Get all drivers
+// Get all drivers (corrected: removed populate)
 export const getAllDrivers = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
 
     const drivers = await Driver.find()
+    .populate(
+       'user',
+      'firstName lastName email' 
+    ) 
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
@@ -83,89 +92,68 @@ export const getAllDrivers = async (req, res) => {
     res.status(500).json({ status: 'error', message: 'Internal server error', error: err.message });
   }
 };
-
 export const getAllDriversWithoutPagination = async (req, res) => {
-    try {
-      console.log('Fetching all drivers without pagination'); // Debugging
-      const drivers = await Driver.find(); // Fetch all drivers from the database
-  
-      res.status(200).json({
-        status: 'success',
-        data: { drivers },
-      });
-    } catch (err) {
-      console.error('Error fetching drivers:', err);
-      res.status(500).json({ status: 'error', message: 'Internal server error', error: err.message });
-    }
-  };
-// Get a specific driver by ID
+  try {
+    console.log('Fetching all drivers without pagination'); 
+    const drivers = await Driver.find(); 
+
+    res.status(200).json({
+      status: 'success',
+      data: { drivers },
+    });
+  } catch (err) {
+    console.error('Error fetching drivers:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error', error: err.message });
+  }
+};
 export const getDriverById = async (req, res) => {
   try {
     const { driverId } = req.params;
 
-    const driver = await Driver.findById(driverId);
+    const driver = await Driver.findById(driverId).populate({
+      path: 'user',
+      select: 'firstName lastName email' // Only include these fields
+    });
     if (!driver) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Driver not found',
-      });
+      return res.status(404).json({ status: 'fail', message: 'Driver not found' });
     }
 
-    res.status(200).json({
-      status: 'success',
-      data: { driver },
-    });
+    res.status(200).json({ status: 'success', data: { driver } });
   } catch (err) {
     console.error('Error fetching driver:', err);
     res.status(500).json({ status: 'error', message: 'Internal server error', error: err.message });
   }
 };
 
-// Update a driver
+// Update driver (corrected populate if using user reference)
 export const updateDriver = async (req, res) => {
   try {
     const { driverId } = req.params;
-
-    // Extract fields from request body
-    const { firstName, lastName, licenseNumber, phone, email, dateOfBirth, drivingScore, activeStatus, hireDate } = req.body;
-
-    // Handle file upload
+    const { licenseNumber, phone, dateOfBirth, drivingScore, activeStatus, hireDate } = req.body;
     const profilePicture = req.file ? `/uploads/${req.file.filename}` : req.body.profilePicture;
 
-    // Update driver
     const updatedDriver = await Driver.findByIdAndUpdate(
       driverId,
       {
-        firstName,
-        lastName,
         phone,
         licenseNumber,
-        email,
-        dateOfBirth: new Date(dateOfBirth), // Convert to Date object
+        dateOfBirth: new Date(dateOfBirth),
         drivingScore,
         activeStatus,
-        hireDate: new Date(hireDate), // Convert to Date object
+        hireDate: new Date(hireDate),
         profilePicture,
       },
-      { new: true, runValidators: true } // Return updated document and run validators
-    );
+      { new: true, runValidators: true }
+    ); 
 
     if (!updatedDriver) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Driver not found',
-      });
+      return res.status(404).json({ status: 'fail', message: 'Driver not found' });
     }
 
-    // Return success response
-    res.status(200).json({
-      status: 'success',
-      data: { driver: updatedDriver },
-    });
+    res.status(200).json({ status: 'success', data: { driver: updatedDriver } });
   } catch (err) {
     console.error('Error updating driver:', err);
     if (err.name === 'ValidationError') {
-        console.log('Mongoose Validation Errors:', err.errors); 
       return res.status(400).json({ status: 'fail', message: 'Validation failed', errors: err.errors });
     }
     res.status(500).json({ status: 'error', message: 'Internal server error', error: err.message });

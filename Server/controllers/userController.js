@@ -4,7 +4,8 @@ import { body, validationResult } from 'express-validator';
 
 // Input validation rules for user registration
 export const validateUserRegistration = [
-    body('name').notEmpty().withMessage('Name is required'),
+    body('firstName').notEmpty().withMessage('firstName is required'),
+    body('lastName').notEmpty().withMessage('lastName is required'),
     body('email').isEmail().withMessage('Invalid email address'),
     body('password')
         .isLength({ min: 8 })
@@ -31,7 +32,7 @@ export const registerUser = async (req, res) => {
             });
         }
 
-        const { name, email, password, role } = req.body;
+        const { firstName,lastName, email, password, role } = req.body;
 
         // Check if email already exists
         const existingUser = await User.findOne({ email });
@@ -44,7 +45,8 @@ export const registerUser = async (req, res) => {
 
         // Create new user
         const newUser = await User.create({
-            name,
+            firstName,
+            lastName,
             email,
             password,
             role,
@@ -197,4 +199,29 @@ const handleRegistrationErrors = (error, res) => {
         status: 'error',
         message: 'Something went wrong! Please try again later',
     });
+};
+
+export const getUsers = async (req, res) => {
+    try {
+        // Get optional role filter from query parameters
+        const { role } = req.query;
+        const filter = role ? { role } : {};
+
+        // Get all users (or filtered by role)
+        const users = await User.find(filter).select('-password -__v');
+
+        res.status(200).json({
+            status: 'success',
+            results: users.length,
+            data: {
+                users
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch users',
+            error: error.message
+        });
+    }
 };
