@@ -8,6 +8,7 @@ import driverRoutes from './routes/driverRoutes.js';
 import tripRoutes from './routes/tripRoutes.js';
 import maintenaceRoutes from './routes/maintenaceRoutes.js';
 import reportAnalysisRoutes from './routes/reportAnalysisRoutes.js';
+import incident from './routes/incident.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 import { authenticate } from './middleware/authMiddleware.js'; ;
 
@@ -41,7 +42,8 @@ app.use('/vehicles', vehicleRoutes);
 app.use('/drivers', driverRoutes);
 app.use('/trips', tripRoutes);
 app.use('/maintenance', maintenaceRoutes);
-app.use('/reports',reportAnalysisRoutes);
+app.use('/reportanalyses',reportAnalysisRoutes);
+app.use('/incident-reports',incident);
 
 // Error handling middleware
 app.use(errorHandler);

@@ -1,263 +1,251 @@
-import BaseReport from '../models/reportAnalysis.js';
-import { validationResult, check } from 'express-validator';
+import Driver from '../models/driver.js';
+import MaintenanceRecord from '../models/maintainence.js';
+import Trip from '../models/trip.js';
+import Vehicle from '../models/vehicle.js';
 
-// In-memory cache implementation
-const reportCache = new Map();
-const CACHE_TTL = 300000; // 5 minutes in milliseconds
+// Controller for getting all drivers report with optional filters
+export const getAllDriversReport = async (req, res) => {
+    try {
+        const { status, minScore, maxScore } = req.query;
+        let filter = {};
 
-// Report type constants
-const REPORT_TYPES = {
-  MAINTENANCE: 'Maintenance',
-  DRIVER_PERFORMANCE: 'DriverPerformance',
-  VEHICLE_UTILIZATION: 'VehicleUtilization',
-  INCIDENT: 'Incident'
+        // Filter by active status
+        if (status) {
+            filter.activeStatus = status.toLowerCase() === 'true';
+        }
+
+        // Filter by driving score range
+        if (minScore || maxScore) {
+            filter.drivingScore = {};
+            if (minScore) filter.drivingScore.$gte = Number(minScore);
+            if (maxScore) filter.drivingScore.$lte = Number(maxScore);
+        }
+
+        const drivers = await Driver.find(filter).populate('user', 'firstName lastName email');
+        res.status(200).json({ success: true, count: drivers.length, data: drivers });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching driver report', error: error.message });
+    }
 };
 
-// Generate Report with lookup for related data
-export const generateReport = async (req, res) => {
-  try {
-    const { reportType, startDate, endDate } = req.query;
+// Controller for generating driver summary
+export const getDriverSummary = async (req, res) => {
+    try {
+        const totalDrivers = await Driver.countDocuments();
+        const activeDrivers = await Driver.countDocuments({ activeStatus: true });
+        const inactiveDrivers = totalDrivers - activeDrivers;
+        const averageDrivingScore = await Driver.aggregate([{
+            $group: { _id: null, avgScore: { $avg: "$drivingScore" } }
+        }]);
 
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const cacheKey = `report:${reportType}:${startDate}:${endDate}`;
-    if (reportCache.has(cacheKey)) {
-      return res.json(reportCache.get(cacheKey));
-    }
-
-    const reports = await BaseReport.aggregate([
-      { 
-        $match: {
-          reportType,
-          'dateRange.start': { $lte: new Date(endDate) },
-          'dateRange.end': { $gte: new Date(startDate) }
-        }
-      },
-      {
-        $lookup: {
-          from: "vehicles",
-          localField: "reportData.vehicles.vehicle",
-          foreignField: "_id",
-          as: "vehicleDetails"
-        }
-      },
-      {
-        $set: {
-          vehicleDetails: {
-            $cond: {
-              if: { $isArray: "$vehicleDetails" },
-              then: "$vehicleDetails",
-              else: [{ registrationNumber: "N/A", model: "N/A" }]
+        res.status(200).json({
+            success: true,
+            data: {
+                totalDrivers,
+                activeDrivers,
+                inactiveDrivers,
+                averageDrivingScore: averageDrivingScore.length ? averageDrivingScore[0].avgScore : 0
             }
-          },
-          "reportData.vehicles": {
-            $map: {
-              input: "$reportData.vehicles",
-              as: "vehicle",
-              in: {
-                vehicle: "$$vehicle.vehicle",
-                totalHours: "$$vehicle.totalHours",
-                distanceTraveled: "$$vehicle.distanceTraveled",
-                utilizationRate: "$$vehicle.utilizationRate",
-                fuelConsumed: "$$vehicle.fuelConsumed",
-                registration: {
-                $arrayElemAt: [
-                  {
-                    $map: {
-                      input: "$vehicleDetails",
-                      as: "v",
-                      in: {
-                        $cond: {
-                          if: { $eq: [{ $toString: "$$v._id" }, { $toString: "$$vehicle.vehicle" }] },
-                          then: "$$v.registrationNumber",
-                          else: null
-                        }
-                      }
-                    }
-                  },
-                  0
-                ]
-              },
-              model: {
-                $arrayElemAt: [
-                  {
-                    $map: {
-                      input: "$vehicleDetails",
-                      as: "v",
-                      in: {
-                        $cond: {
-                          if: { $eq: [{ $toString: "$$v._id" }, { $toString: "$$vehicle.vehicle" }] },
-                          then: "$$v.model",
-                          else: null
-                        }
-                      }
-                    }
-                  },
-                  0
-                ]
-              }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error generating driver summary', error: error.message });
+    }
+};
+
+// Controller for getting all maintenance reports with optional filters
+/**
+ * Fetch all maintenance reports with filters & pagination
+ */
+export const getAllMaintenanceReports = async (req, res) => {
+    try {
+        let { startDate, endDate, registrationNumber, service, page = 1, limit = 10 } = req.query;
+
+        // Validate input dates
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: 'Start date and end date are required' });
+        }
+
+        // Convert to Date objects and validate
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (isNaN(start) || isNaN(end)) {
+            return res.status(400).json({ error: 'Invalid date format' });
+        }
+
+        // Adjust end date to include the full day
+        end.setHours(23, 59, 59, 999);
+
+        // Build query filters to check both serviceDate and nextServiceDate within the specified range
+        let filter = {
+            $or: [
+                { serviceDate: { $gte: start, $lte: end } },   // Filter by serviceDate
+                { nextServiceDate: { $gte: start, $lte: end } }  // Filter by nextServiceDate
+            ]
+        };
+
+        if (registrationNumber) filter.registrationNumber = registrationNumber;
+        if (service) filter.serviceType = new RegExp(service, 'i'); // Case-insensitive search
+
+        // Pagination settings
+        const pageNumber = parseInt(page);
+        const pageSize = parseInt(limit);
+        const skip = (pageNumber - 1) * pageSize;
+
+        // Fetch maintenance records with population of vehicle details
+        const reports = await MaintenanceRecord.find(filter)
+            .skip(skip)
+            .limit(pageSize)
+            .populate('vehicle', 'registrationNumber model');  // Populate vehicle data
+
+        const totalRecords = await MaintenanceRecord.countDocuments(filter);
+
+        if (reports.length === 0) {
+            return res.status(200).json({ message: 'No maintenance reports found for the selected filters' });
+        }
+
+        // Summarize total maintenance cost
+        const totalCost = reports.reduce((sum, record) => sum + (record.cost || 0), 0);
+
+        // Structure the response
+        return res.status(200).json({
+            success: true,
+            totalRecords,
+            totalPages: Math.ceil(totalRecords / pageSize),
+            currentPage: pageNumber,
+            summary: { totalCost },
+            tableData: reports.map(record => ({
+                registrationNumber: record.vehicle ? record.vehicle.registrationNumber : 'N/A',
+                model: record.vehicle ? record.vehicle.model : 'N/A',
+                serviceType: record.serviceType,
+                cost: record.cost,
+                serviceDate: record.serviceDate.toISOString().split('T')[0],  // Format date to YYYY-MM-DD
+                nextServiceDate: record.nextServiceDate ? record.nextServiceDate.toISOString().split('T')[0] : 'N/A',
+                serviceCenter: record.serviceCenter || 'N/A',
+                notes: record.notes || 'N/A',
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching maintenance reports:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Controller for getting all trips report with optional filters
+export const getAllTripsReport = async (req, res) => {
+    try {
+        const { status, startDate, endDate } = req.query;
+        let filter = {};
+
+        // Filter by trip status
+        if (status) {
+            filter.tripStatus = status;
+        }
+
+        // Filter by date range
+        if (startDate || endDate) {
+            filter.scheduledDate = {};
+            if (startDate) filter.scheduledDate.$gte = new Date(startDate);
+            if (endDate) filter.scheduledDate.$lte = new Date(endDate);
+        }
+
+        const trips = await Trip.find(filter)
+            .populate('vehicle', 'registrationNumber make model')
+            .populate('driver', 'licenseNumber user')
+            .sort({ scheduledDate: -1 });
+
+        res.status(200).json({ success: true, count: trips.length, data: trips });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching trip report', error: error.message });
+    }
+};
+
+// Controller for generating trip summary
+export const getTripSummary = async (req, res) => {
+    try {
+        const totalTrips = await Trip.countDocuments();
+        const completedTrips = await Trip.countDocuments({ tripStatus: 'Completed' });
+        const cancelledTrips = await Trip.countDocuments({ tripStatus: 'Cancelled' });
+
+        const aggregatedData = await Trip.aggregate([{
+            $group: {
+                _id: null,
+                totalDistance: { $sum: "$distanceTraveled" },
+                totalFuel: { $sum: "$fuelConsumption" },
+                averageFuelEfficiency: { $avg: { $cond: [{ $gt: ["$distanceTraveled", 0] }, { $divide: ["$distanceTraveled", "$fuelConsumption"] }, 0] } }
             }
-          }
-        }
-      }
+        }]);
+
+        const summary = aggregatedData.length ? aggregatedData[0] : { totalDistance: 0, totalFuel: 0, averageFuelEfficiency: 0 };
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalTrips,
+                completedTrips,
+                cancelledTrips,
+                totalDistance: summary.totalDistance,
+                totalFuel: summary.totalFuel,
+                averageFuelEfficiency: summary.averageFuelEfficiency
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error generating trip summary', error: error.message });
     }
-  ]);
-    
-    console.log("🚀 Raw Reports from Aggregation:", JSON.stringify(reports, null, 2));
-    if (!reports.length) {
-      return res.status(404).json({ message: "No reports found for the given criteria" });
-    }
-
-    // Transform Data for Frontend
-    const transformedReport = transformReportData(reportType, reports);
-
-    // Cache result
-    reportCache.set(cacheKey, transformedReport);
-    setTimeout(() => reportCache.delete(cacheKey), CACHE_TTL);
-
-    res.json(transformedReport);
-  } catch (error) {
-    handleReportError(error, res);
-  }
 };
 
-// Transform Report Data
-const transformReportData = (type, reports) => {
-  if (!reports.length) return getEmptyReport(type);
+// Controller for getting all vehicles report with optional filters
+export const getAllVehiclesReport = async (req, res) => {
+    try {
+        const { status, health, insuranceExpired } = req.query;
+        let filter = {};
 
-  const report = reports[0]; // Use first report
-  switch (type) {
-    case REPORT_TYPES.VEHICLE_UTILIZATION: {
-      // [CHANGE] Vehicle Utilization transformation
-      const vehicles = report.reportData.vehicles || [];
-      return {
-        chartData: {
-          labels: vehicles.map(v => `${v.registrationNumber || 'N/A'} - ${v.model || 'N/A'}`),
-          datasets: [{
-            label: 'Utilization Rate (%)',
-            data: vehicles.map(v => v.utilizationRate || 0),
-            backgroundColor: 'rgba(54, 162, 235, 0.6)'
-          }]
-        },
-        tableData: vehicles.map(v => ({
-          registration: v.registrationNumber || 'N/A',
-          model: v.model || 'N/A',
-          utilization: v.utilizationRate || 0,
-          hours: v.totalHours || 0,
-          fuelConsumed: v.fuelConsumed || 0
-        })),
-        summary: {
-          averageUtilization: report.reportData.summary?.averageUtilization || "N/A",
-          totalFuelConsumed: report.reportData.summary?.totalFuelConsumed || 0
+        // Filter by active status
+        if (status) {
+            filter.activeStatus = status.toLowerCase() === 'true';
         }
-      };
-    }
-    case REPORT_TYPES.MAINTENANCE: {
-      // [CHANGE] Maintenance transformation
-      const records = reports.flatMap(r => r.reportData.records || []);
-      return {
-        chartData: {
-          labels: records.map(r => `${r.vehicle?.registrationNumber || 'Unknown'} - ${r.vehicle?.model || 'Unknown'}`),
-          datasets: [{
-            label: 'Service Cost ($)',
-            data: records.map(r => r.cost || 0),
-            backgroundColor: 'rgba(255, 99, 132, 0.6)'
-          }]
-        },
-        tableData: records.map(r => ({
-          registration: r.vehicle?.registrationNumber || 'Unknown',
-          model: r.vehicle?.model || 'Unknown',
-          service: r.serviceType || "Unknown",
-          cost: r.cost || 0,
-          date: r.date ? new Date(r.date).toLocaleDateString() : "N/A",
-          serviceCenter: r.serviceCenter || "N/A"
-        })),
-        summary: {
-          totalCost: records.reduce((sum, r) => sum + (r.cost || 0), 0),
-          averageCostPerVehicle: records.length ? records.reduce((sum, r) => sum + (r.cost || 0), 0) / records.length : "N/A"
+
+        // Filter by vehicle health
+        if (health) {
+            filter.vehicleHealth = health;
         }
-      };
-    }
-    case REPORT_TYPES.DRIVER_PERFORMANCE: {
-      // [CHANGE] Driver Performance transformation
-      const drivers = reports.flatMap(r => r.reportData.drivers || []);
-      return {
-        chartData: {
-          labels: drivers.map(d => `${d.driver?.name || 'Unknown'} (${d.driver?.licenseNumber || 'N/A'})`),
-          datasets: [{
-            label: 'Safety Score',
-            data: drivers.map(d => d.safetyScore || 0),
-            backgroundColor: 'rgba(75, 192, 192, 0.6)'
-          }]
-        },
-        tableData: drivers.map(d => ({
-          name: d.driver?.name || "Unknown",
-          licenseNumber: d.driver?.licenseNumber || "N/A",
-          trips: d.tripsCompleted || 0,
-          distance: d.totalDistance || 0,
-          safetyScore: d.safetyScore || 0,
-          averageSpeed: d.averageSpeed || 0,
-          fuelEfficiency: d.fuelEfficiency || 0
-        })),
-        summary: {
-          overallAverageSafetyScore: drivers.length ? (drivers.reduce((sum, d) => sum + (d.safetyScore || 0), 0) / drivers.length).toFixed(2) : "N/A",
-          totalDistance: drivers.reduce((sum, d) => sum + (d.totalDistance || 0), 0),
-          totalTrips: drivers.reduce((sum, d) => sum + (d.tripsCompleted || 0), 0)
+
+        // Filter by insurance expiry
+        if (insuranceExpired === 'true') {
+            const today = new Date();
+            filter['insuranceDetails.expiryDate'] = { $lt: today };
         }
-      };
+
+        const vehicles = await Vehicle.find(filter);
+        res.status(200).json({ success: true, count: vehicles.length, data: vehicles });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching vehicle report', error: error.message });
     }
-    case REPORT_TYPES.INCIDENT: {
-      // [CHANGE] Incident transformation
-      const incidents = reports.flatMap(r => r.reportData.incidents || []);
-      return {
-        chartData: {
-          labels: incidents.map(i => new Date(i.date).toLocaleDateString()),
-          datasets: [{
-            label: 'Incident Severity',
-            data: incidents.map(i => i.severity === 'Low' ? 1 : i.severity === 'Medium' ? 2 : i.severity === 'High' ? 3 : 0),
-            backgroundColor: 'rgba(255, 206, 86, 0.6)'
-          }]
-        },
-        tableData: incidents.map(i => ({
-          date: i.date ? new Date(i.date).toLocaleDateString() : "N/A",
-          registration: i.vehicle?.registrationNumber || 'Unknown',
-          model: i.vehicle?.model || 'Unknown',
-          driver: i.driver?.name || 'N/A',
-          type: i.type || "Unknown",
-          severity: i.severity || "Unknown",
-          resolved: i.resolved ? "Yes" : "No"
-        })),
-        summary: {
-          totalIncidents: incidents.length,
-          resolvedCount: incidents.filter(i => i.resolved).length,
-          severityDistribution: {
-            low: incidents.filter(i => i.severity === 'Low').length,
-            medium: incidents.filter(i => i.severity === 'Medium').length,
-            high: incidents.filter(i => i.severity === 'High').length
-          }
-        }
-      };
-    }
-    default:
-      return reports;
-  }
 };
 
-// Handle Empty Report Cases
-const getEmptyReport = (type) => ({
-  chartData: { labels: [], datasets: [{ label: `${type} Data`, data: [], backgroundColor: 'rgba(0, 0, 0, 0.2)' }] },
-  tableData: [],
-  summary: {}
-});
+// Controller for generating vehicle summary
+export const getVehicleSummary = async (req, res) => {
+    try {
+        const totalVehicles = await Vehicle.countDocuments();
+        const activeVehicles = await Vehicle.countDocuments({ activeStatus: true });
+        const inactiveVehicles = totalVehicles - activeVehicles;
+        const vehicleHealthStats = await Vehicle.aggregate([
+            { $group: { _id: '$vehicleHealth', count: { $sum: 1 } } }
+        ]);
+        const expiredInsuranceCount = await Vehicle.countDocuments({
+            'insuranceDetails.expiryDate': { $lt: new Date() }
+        });
 
-// Handle Errors
-const handleReportError = (error, res) => {
-  console.error('Report Error:', error);
-  res.status(500).json({ message: "Server error", error: error.message });
+        res.status(200).json({
+            success: true,
+            data: {
+                totalVehicles,
+                activeVehicles,
+                inactiveVehicles,
+                expiredInsuranceCount,
+                vehicleHealthStats
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error generating summary report', error: error.message });
+    }
 };
-
-export default { generateReport };

@@ -1,5 +1,5 @@
 // scripts/seedReports.js
-import mongoose from 'mongoose';
+/*import mongoose from 'mongoose';
 import BaseReport from '../models/reportAnalysis.js';
 import Vehicle from '../models/vehicle.js';
 import User from '../models/User.js'; // Make sure this model exists

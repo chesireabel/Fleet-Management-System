@@ -225,3 +225,21 @@ export const getUsers = async (req, res) => {
         });
     }
 };
+
+export const getDriverById = async (req, res) => {
+    try {
+      const user = await User.findById(req.params.id);
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      if (user.role !== "driver") {
+        return res.status(403).json({ message: "Access denied: Not a driver" });
+      }
+  
+      res.json(user); // Send driver details
+    } catch (error) {
+      res.status(500).json({ message: "Server error", error: error.message });
+    }
+  };

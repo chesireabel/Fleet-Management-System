@@ -1,30 +1,29 @@
-// routes/reportRoutes.js
 import express from 'express';
-import { generateReport } from '../controllers/reportAnalysisController.js';
+import {
+    getAllDriversReport,
+    getDriverSummary,
+    getAllMaintenanceReports,
+    getTripSummary,
+    getAllTripsReport,
+    getVehicleSummary,
+    getAllVehiclesReport
+} from '../controllers/reportAnalysisController.js';
 
 const router = express.Router();
 
-// GET /api/reports
-router.get(
-    '/',
-    generateReport
-);
+// Driver reports routes
+router.get('/drivers', getAllDriversReport);
+router.get('/drivers/summary', getDriverSummary);
 
-// GET /api/reports/:id
-router.get('/:id', async (req, res) => {
-    try {
-        const report = await BaseReport.findById(req.params.id)
-            .populate('metadata.requestedBy', 'name email')
-            .lean();
+// Maintenance reports routes
+router.get('/maintenance', getAllMaintenanceReports);
 
-        if (!report) {
-            return res.status(404).json({ error: 'Report not found' });
-        }
+// Trip reports routes
+router.get('/trips', getAllTripsReport);
+router.get('/trips/summary', getTripSummary);
 
-        res.json(report);
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+// Vehicle reports routes
+router.get('/vehicles', getAllVehiclesReport);
+router.get('/vehicles/summary', getVehicleSummary);
 
 export default router;

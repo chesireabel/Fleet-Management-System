@@ -65,7 +65,12 @@ export const createTrip = async (req, res) => {
         if (!foundVehicle || !foundDriver) return handleError(res, 404, 'Vehicle or Driver not found');
 
         // Create the trip
-        const trip = new Trip({ driver, vehicle, startLocation, endLocation, scheduledDate });
+        const trip = new Trip({ 
+            driver: foundDriver,
+             vehicle,
+             startLocation,
+             endLocation,
+             scheduledDate });
         await trip.save();
 
         res.status(201).json({ status: 'success', data: { trip } });
@@ -144,7 +149,6 @@ export const completeTrip = async (req, res) => {
     }
 };
 
-// Get all trips with pagination (Manager-only)
 export const getAllTrips = async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
@@ -154,8 +158,12 @@ export const getAllTrips = async (req, res) => {
         const trips = await Trip.find()
             .populate({path :'vehicle',
                       select: 'registrationNumber'})
-            .populate({path:'driver',
-                    select: 'firstName lastName'})
+            .populate({path :'driver',
+                populate:{
+                     path:'user',
+                    select: 'firstName lastName',
+                },
+               })
             .skip(skip)
             .limit(Number(limit))
             .lean();
@@ -172,6 +180,32 @@ export const getAllTrips = async (req, res) => {
         handleError(res, 500, 'Internal server error');
     }
 };
+
+export const getDriverTrips = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+        }
+
+        const driverId = req.user._id; // Ensure this is valid
+        console.log('Driver ID:', driverId); // Debugging
+
+        const trips = await Trip.find({ assignedDriver: driverId });
+
+        if (!trips.length) {
+            return res.status(404).json({ status: 'error', message: 'No trips found' });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            data: trips,
+        });
+    } catch (error) {
+        console.error('Error fetching driver trips:', error);
+        res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+};
+
 
 // Get a specific trip by ID (Manager and Driver)
 export const getTripById = async (req, res) => {

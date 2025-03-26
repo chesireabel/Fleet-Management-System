@@ -95,7 +95,10 @@ export const getAllDrivers = async (req, res) => {
 export const getAllDriversWithoutPagination = async (req, res) => {
   try {
     console.log('Fetching all drivers without pagination'); 
-    const drivers = await Driver.find(); 
+    const drivers = await Driver.find().populate(
+      'user',
+     'firstName lastName email' 
+   ) 
 
     res.status(200).json({
       status: 'success',
