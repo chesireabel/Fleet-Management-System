@@ -47,6 +47,8 @@ const Reports = () => {
   const [reportData, setReportData] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [cache, setCache] = useState({});
+  const [selectedVehicle, setSelectedVehicle] = useState('All Vehicles');
+
 
   const validateForm = () => {
     const errors = {};
@@ -69,7 +71,7 @@ const Reports = () => {
 
   const fetchReportData = async (reportType, dates) => {
     try {
-      const endpoint = `http://localhost:3000/reports?reportType=${reportType}&startDate=${dates.start}&endDate=${dates.end}`;
+      const endpoint = `http://localhost:3000/reportanalyses?reportType=${reportType}&startDate=${dates.start}&endDate=${dates.end}`;
       const response = await fetch(endpoint);
       
       if (!response.ok) {
@@ -101,7 +103,7 @@ const Reports = () => {
     try {
       setLoading(true);
       setError('');
-      const data = await fetchReportData(selectedReport, dateRange);
+      const data = await fetchReportData(selectedReport, dateRange,selectedVehicle);
 
       console.log("📩 Frontend Received Data:", data); 
       
@@ -315,7 +317,7 @@ const Reports = () => {
                     <td>{`${record.registrationNumber} - ${record.model}`}</td>
                     <td>{record.service}</td>
                     <td>{record.date}</td>
-                    <td>${record.cost.toFixed(2)}</td>
+                    <td>${record.cost?.toFixed(2)}</td>
                     <td>{record.serviceCenter}</td>
                   </tr>
                 ))}

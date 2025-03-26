@@ -1,18 +1,20 @@
-import { legacy_createStore as createStore } from 'redux'
+import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers } from 'redux';
+import sidebarReducer from './reducers/sidebarReducers';
+import themeReducer from './reducers/themeReducer';
+import notificationReducer from './reducers/notif';
 
-const initialState = {
-  sidebarShow: true,
-  theme: 'light',
-}
 
-const changeState = (state = initialState, { type, ...rest }) => {
-  switch (type) {
-    case 'set':
-      return { ...state, ...rest }
-    default:
-      return state
-  }
-}
+const rootReducer = combineReducers({
+  sidebar: sidebarReducer,
+  theme: themeReducer,
+  notifications: notificationReducer,
+});
 
-const store = createStore(changeState)
-export default store
+
+const store = configureStore({
+  reducer: rootReducer,
+  // Redux Toolkit automatically includes thunk middleware
+});
+
+export default store;

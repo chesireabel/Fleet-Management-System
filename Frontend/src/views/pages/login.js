@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios'; 
+import { Eye, EyeOff } from 'lucide-react';
 import {
   CContainer,
   CRow,
@@ -16,90 +17,193 @@ import {
   CLink,
 } from '@coreui/react';
 
+// Centralized configuration
+const CONFIG = {
+  API_URL:import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  ROUTE_MAP: {
+    'fleet_manager': '/dashboard',
+    'driver': '/driver',
+    'maintenance_team': '/maintenance/dashboard',
+    'finance_team': '/finance/dashboard',
+    'senior_management': '/senior-management/dashboard',
+    'default': '/'
+  }
+};
+
 function Login() {
   const navigate = useNavigate();
 
-  // State to manage form inputs
+  // Enhanced state management
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    rememberMe: false
   });
 
-  // State to manage validation errors
-  const [errors, setErrors] = useState({});
+  const [uiState, setUiState] = useState({
+    errors: {},
+    loginError: '',
+    isLoading: false,
+    showPassword: false
+  });
 
-  // State to manage login error message
-  const [loginError, setLoginError] = useState('');
+  // Load remembered email from localStorage
+  React.useEffect(() => {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setFormData(prev => ({
+        ...prev,
+        email: rememberedEmail,
+        rememberMe: true
+      }));
+    }
+  }, []);
 
-  // Handle input changes
+  // Enhanced input change handler
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-    setErrors({ ...errors, [name]: '' }); // Clear errors when the user types
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+
+    // Clear specific error when user starts typing
+    setUiState(prev => ({
+      ...prev,
+      errors: { ...prev.errors, [name]: '' },
+      loginError: ''
+    }));
   };
 
-  // Validate form inputs
+  // More robust form validation
   const validateForm = () => {
     const newErrors = {};
 
-    // Email validation
+    // Email validation with more comprehensive regex
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
-    // Password validation
+    // Password validation with more checks
     if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; // Return true if no errors
+    setUiState(prev => ({ ...prev, errors: newErrors }));
+    return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
+  
+
+  // Handle form submission with improved error handling
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Reset previous states
+    setUiState(prev => ({ 
+      ...prev, 
+      loginError:'', 
+      isLoading: true 
+    }));
+
     if (validateForm()) {
       try {
-        const response = await axios.post('http://localhost:3000/users/login', formData);
-  
-        // Handle successful login
-        console.log('Login successful:', response.data);
-  
-        // Save the token to localStorage (for authentication)
-        localStorage.setItem('token', response.data.token);
-  
-        const userRole = response.data.data.user.role;
-        console.log('User Role:', userRole);
-        if (userRole === 'fleet_manager') {
-          navigate('/dashboard');
-        } else if (userRole === 'driver') {
-          navigate('/driver');
-        } else if (userRole === 'maintenance_team') {
-          navigate('/maintenance/dashboard');
-        } else if (userRole === 'finance_team') {
-          navigate('/finance/dashboard');
-        } else if (userRole === 'senior_management') {
-          navigate('/senior-management/dashboard');
+        // Remember email if checkbox is checked
+        if (formData.rememberMe) {
+          localStorage.setItem('rememberedEmail', formData.email);
         } else {
-          navigate('/'); // Default fallback
+          localStorage.removeItem('rememberedEmail');
         }
+
+        const response = await axios.post(`${CONFIG.API_URL}/users/login`, {
+          email: formData.email,
+          password: formData.password
+        });
+  
+ 
+        const { 
+          token, 
+          data = {}, 
+          user = {}
+        } = response.data;
+
+        console.log('Full Backend Response:', response.data);
+        console.log('Response Data:', JSON.stringify(response.data, null, 2));
+
+
+        const driverId = user._id || data.user?._id;
+
+
+
+         // Log specific fields
+      console.log('Token:', token);
+      console.log('Data Object:', data);
+      console.log('User Object:', user);
+      console.log('Driver ID:', driverId);
+
+        
+
+        // Save the token and user info
+       
+        
+        // Multiple approaches to store driver ID
+        if (driverId) {
+          localStorage.setItem('driverId', driverId);
+        }
+        if (user.driverId) {
+          localStorage.setItem('driverId', user.driverId);
+        }
+        if (data.user?.driverId) {
+          localStorage.setItem('driverId', data.user.driverId);
+        }
+
+        localStorage.setItem('token', token || '');
+        localStorage.setItem('userRole', user.role || data.user?.role || '');
+
+              // Store full user data for inspection
+      localStorage.setItem('userData', JSON.stringify({
+        ...user,
+        ...data.user
+      }));
+     
+    //  localStorage.clear();
+    console.log('Stored Driver ID:', localStorage.getItem('driverId'));
+      console.log('Stored User Data:', localStorage.getItem('userData'));
+
+      const userRole = localStorage.getItem('userRole') || ''; 
+
+        // Navigate based on role, with fallback
+        const destinationRoute = CONFIG.ROUTE_MAP[userRole] || CONFIG.ROUTE_MAP.default;
+        
+        navigate(destinationRoute);
       } catch (error) {
-        console.error('Login failed:', error.response?.data || error.message);
-  
-        // Handle login errors
-        if (error.response?.data.message) {
-          setLoginError(error.response.data.message);
-        } else {
-          setLoginError('An error occurred during login. Please try again.');
-        }
+        console.error("Login Error:", error); 
+         const errorMessage = error.response?.data?.message || 
+        error.message || 
+        'An unexpected error occurred. Please try again.';
+        
+        setUiState(prev => ({ 
+          ...prev, 
+          loginError: errorMessage,
+          isLoading: false 
+        }));
       }
+    } else {
+      setUiState(prev => ({ ...prev, isLoading: false }));
     }
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = () => {
+    setUiState(prev => ({ 
+      ...prev, 
+      showPassword: !prev.showPassword 
+    }));
   };
 
   return (
@@ -108,7 +212,6 @@ function Login() {
         <CRow className="justify-content-center">
           <CCol md={8}>
             <CCardGroup>
-              {/* Left Side: Login Form */}
               <CCard className="p-4">
                 <CCardBody>
                   <CForm onSubmit={handleSubmit}>
@@ -124,61 +227,92 @@ function Login() {
                         placeholder="Enter your email"
                         value={formData.email}
                         onChange={handleChange}
-                        invalid={!!errors.email}
+                        invalid={!!uiState.errors.email}
                       />
-                      {errors.email && <div className="text-danger">{errors.email}</div>}
+                      {uiState.errors.email && (
+                        <div className="text-danger">{uiState.errors.email}</div>
+                      )}
                     </div>
 
-                    {/* Password Input */}
-                    <div className="mb-4">
+                    {/* Password Input with Visibility Toggle */}
+                    <div className="mb-3">
                       <CFormLabel>Password</CFormLabel>
-                      <CFormInput
-                        type="password"
-                        name="password"
-                        placeholder="Enter your password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        invalid={!!errors.password}
-                      />
-                      {errors.password && <div className="text-danger">{errors.password}</div>}
+                      <div className="position-relative">
+                        <CFormInput
+                          type={uiState.showPassword ? "text" : "password"}
+                          name="password"
+                          placeholder="Enter your password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          invalid={!!uiState.errors.password}
+                        />
+                        <button
+                          type="button"
+                          className="position-absolute end-0 top-50 translate-middle-y me-2 btn btn-link"
+                          onClick={togglePasswordVisibility}
+                        >
+                          {uiState.showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                      {uiState.errors.password && (
+                        <div className="text-danger">{uiState.errors.password}</div>
+                      )}
                     </div>
 
-                    {/* Submit Button */}
+                    {/* Remember Me Checkbox */}
+                    <div className="mb-3 form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="rememberMe"
+                        name="rememberMe"
+                        checked={formData.rememberMe}
+                        onChange={handleChange}
+                      />
+                      <label className="form-check-label" htmlFor="rememberMe">
+                        Remember me
+                      </label>
+                    </div>
+
+                    {/* Submit Button with Loading State */}
                     <CRow>
                       <CCol xs={6}>
-                        <CButton type="submit" color="primary" className="px-4">
-                          Login
+                        <CButton 
+                          type="submit" 
+                          color="primary" 
+                          className="px-4"
+                          disabled={uiState.isLoading}
+                        >
+                          {uiState.isLoading ? 'Logging in...' : 'Login'}
                         </CButton>
                       </CCol>
                       <CCol xs={6} className="text-end">
-                        <CLink href="#" className="text-decoration-none">
+                        <CLink href="/forgot-password" className="text-decoration-none">
                           Forgot password?
                         </CLink>
                       </CCol>
                     </CRow>
 
-                    {/* Login Error Message */}
-                    {loginError && (
+                    {/* Error Handling */}
+                    {uiState.loginError && (
                       <CAlert color="danger" className="mt-3">
-                        {loginError}
+                        {uiState.loginError}
                       </CAlert>
                     )}
                   </CForm>
                 </CCardBody>
               </CCard>
 
-              {/* Right Side: Welcome Message */}
+              {/* Signup Section */}
               <CCard className="text-white bg-primary py-5" style={{ width: '44%' }}>
                 <CCardBody className="text-center">
                   <div>
-                    <h2>Welcome to AFA </h2>
-                    <p>
-                      Don't have an account?
-                    </p>
+                    <h2>Welcome to AFA</h2>
+                    <p>Don't have an account?</p>
                     <Link to='/signup'>
-                    <CButton color="light" variant="outline" className="mt-3">
-                      Sign Up
-                    </CButton>
+                      <CButton color="light" variant="outline" className="mt-3">
+                        Sign Up
+                      </CButton>
                     </Link>
                   </div>
                 </CCardBody>

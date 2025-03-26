@@ -12,7 +12,19 @@ import routes from './routes.js';
 const LandingPage = React.lazy(() => import('./views/pages/landingPage'));
 const Login = React.lazy(() => import('./views/pages/login'));
 const Signup = React.lazy(() => import('./views/pages/signup'));
-const DriverPage = React.lazy(() => import('./views/pages/DriverPage'));
+const DriverPage = React.lazy(() => import('./views/pages/DriverPage').catch((error)=> {
+  console.error('Detailed DriverPage Import Error:', {
+  message: error.message,
+  stack: error.stack,
+  errorType: error.constructor.name,
+  importPath: './views/pages/DriverPage'
+
+  });
+  return {default: () => <div>Page Load Error
+    <pre>{JSON.stringify(error, null, 2)}</pre>
+  </div>};
+})
+);
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
 
 

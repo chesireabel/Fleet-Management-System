@@ -21,6 +21,21 @@ import DriverProfile from '../driver/DriverProfile';
 const DriverPage = () => {
   const navigate = useNavigate();
 
+  // Get driverId from localStorage (assuming it's stored in 'userData')
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const driverId = localStorage.getItem('driverId');// Adjust according to the actual structure of userData
+
+
+  if (!driverId) {
+    console.error("Driver ID not found ");
+    // Handle this error gracefully, such as redirecting or showing an error message.
+    navigate('/login'); // Redirect to login or error page
+    return null;
+  }
+
+   // Log the driverId for debugging
+   console.log('Driver ID from localStorage:', driverId);
+
   const handleLogout = () => {
     // Add your logout logic here
     localStorage.removeItem('authToken');
@@ -61,7 +76,6 @@ const DriverPage = () => {
                 as={Link} 
                 to="/driver/trips" 
                 className="text-dark fw-medium px-4 py-3"
-                activeClassName="active bg-white border-bottom-white"
               >
                 <CIcon className="me-2" />
                 My Trips
@@ -72,7 +86,6 @@ const DriverPage = () => {
                 as={Link} 
                 to="/driver/issues" 
                 className="text-dark fw-medium px-4 py-3"
-                activeClassName="active bg-white border-bottom-white"
               >
                 <CIcon icon={cilWarning} className="me-2" />
                 Report Issue
@@ -83,7 +96,6 @@ const DriverPage = () => {
                 as={Link} 
                 to="/driver/profile" 
                 className="text-dark fw-medium px-4 py-3"
-                activeClassName="active bg-white border-bottom-white"
               >
                 <CIcon icon={cilUser} className="me-2" />
                 Profile
@@ -96,9 +108,9 @@ const DriverPage = () => {
               <CCardBody className="p-4" style={{ minHeight: '400px' }}>
                 <Routes>
                   <Route index element={<Navigate to="/driver/trips" replace />} />
-                  <Route path="/trips/*" element={<TripList />} />
-                  <Route path="/issues" element={<IssueReportForm />} />
-                  <Route path="/profile" element={<DriverProfile />} />
+                  <Route path="trips/*" element={<TripList driverId={driverId} />} />
+                  <Route path="issues" element={<IssueReportForm />} />
+                  <Route path="profile" element={<DriverProfile />} />
                 </Routes>
               </CCardBody>
             </CCard>

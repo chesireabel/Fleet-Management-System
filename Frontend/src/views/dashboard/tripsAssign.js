@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   CCard,
   CCardBody,
@@ -24,13 +24,42 @@ import {
   CPaginationItem,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash } from '@coreui/icons';
+import { cilPencil, cilTrash, cilFilter } from '@coreui/icons';
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Utility function for form validation
+const validateTripForm = (formData) => {
+  const errors = {};
+  
+  if (!formData.driver) errors.driver = "Driver is required";
+  if (!formData.vehicle) errors.vehicle = "Vehicle is required";
+  if (!formData.startLocation.trim()) errors.startLocation = "Start location is required";
+  if (!formData.endLocation.trim()) errors.endLocation = "End location is required";
+  if (!formData.scheduledDate) errors.scheduledDate = "Scheduled date is required";
+
+  // Validate scheduled date is in the future
+  const scheduledDate = new Date(formData.scheduledDate);
+  if (scheduledDate <= new Date()) {
+    errors.scheduledDate = "Scheduled date must be in the future";
+  }
+
+  return errors;
+};
+
 // AssignTripModal Component
-const AssignTripModal = ({ visible, onClose, onSubmit, formData, handleChange, drivers, vehicles, isLoading }) => (
+const AssignTripModal = ({ 
+  visible, 
+  onClose, 
+  onSubmit, 
+  formData, 
+  handleChange, 
+  drivers, 
+  vehicles, 
+  isLoading,
+  formErrors 
+}) => (
   <CModal visible={visible} onClose={onClose}>
     <CModalHeader onClose={onClose}>
       <CModalTitle>Assign New Trip</CModalTitle>
@@ -44,6 +73,8 @@ const AssignTripModal = ({ visible, onClose, onSubmit, formData, handleChange, d
             onChange={handleChange}
             required
             disabled={isLoading}
+            invalid={!!formErrors.driver}
+            feedback={formErrors.driver}
           >
             <option value="">Select Driver</option>
             {isLoading ? (
@@ -51,7 +82,7 @@ const AssignTripModal = ({ visible, onClose, onSubmit, formData, handleChange, d
             ) : (
               drivers.map((driver) => (
                 <option key={driver._id} value={driver._id}>
-                  {`${driver.firstName} ${driver.lastName}`}
+                  {`${driver.user?.firstName} ${driver.user?.lastName}`}
                 </option>
               ))
             )}
@@ -65,6 +96,8 @@ const AssignTripModal = ({ visible, onClose, onSubmit, formData, handleChange, d
             onChange={handleChange}
             required
             disabled={isLoading}
+            invalid={!!formErrors.vehicle}
+            feedback={formErrors.vehicle}
           >
             <option value="">Select Vehicle</option>
             {isLoading ? (
@@ -87,6 +120,8 @@ const AssignTripModal = ({ visible, onClose, onSubmit, formData, handleChange, d
             value={formData.startLocation}
             onChange={handleChange}
             required
+            invalid={!!formErrors.startLocation}
+            feedback={formErrors.startLocation}
           />
         </div>
 
@@ -98,6 +133,8 @@ const AssignTripModal = ({ visible, onClose, onSubmit, formData, handleChange, d
             value={formData.endLocation}
             onChange={handleChange}
             required
+            invalid={!!formErrors.endLocation}
+            feedback={formErrors.endLocation}
           />
         </div>
 
@@ -108,6 +145,8 @@ const AssignTripModal = ({ visible, onClose, onSubmit, formData, handleChange, d
             value={formData.scheduledDate}
             onChange={handleChange}
             required
+            invalid={!!formErrors.scheduledDate}
+            feedback={formErrors.scheduledDate}
           />
         </div>
 
@@ -125,7 +164,16 @@ const AssignTripModal = ({ visible, onClose, onSubmit, formData, handleChange, d
 );
 
 // EditTripModal Component
-const EditTripModal = ({ visible, onClose, onSubmit, formData, handleChange, drivers, vehicles }) => (
+const EditTripModal = ({ 
+  visible, 
+  onClose, 
+  onSubmit, 
+  formData, 
+  handleChange, 
+  drivers, 
+  vehicles,
+  formErrors 
+}) => (
   <CModal visible={visible} onClose={onClose}>
     <CModalHeader onClose={onClose}>
       <CModalTitle>Edit Trip</CModalTitle>
@@ -138,11 +186,13 @@ const EditTripModal = ({ visible, onClose, onSubmit, formData, handleChange, dri
             value={formData.driver}
             onChange={handleChange}
             required
+            invalid={!!formErrors.driver}
+            feedback={formErrors.driver}
           >
             <option value="">Select Driver</option>
             {drivers.map((driver) => (
               <option key={driver._id} value={driver._id}>
-                {`${driver.firstName} ${driver.lastName}`}
+                {`${driver.user?.firstName} ${driver.user?.lastName}`}
               </option>
             ))}
           </CFormSelect>
@@ -154,6 +204,8 @@ const EditTripModal = ({ visible, onClose, onSubmit, formData, handleChange, dri
             value={formData.vehicle}
             onChange={handleChange}
             required
+            invalid={!!formErrors.vehicle}
+            feedback={formErrors.vehicle}
           >
             <option value="">Select Vehicle</option>
             {vehicles.map((vehicle) => (
@@ -172,6 +224,8 @@ const EditTripModal = ({ visible, onClose, onSubmit, formData, handleChange, dri
             value={formData.startLocation}
             onChange={handleChange}
             required
+            invalid={!!formErrors.startLocation}
+            feedback={formErrors.startLocation}
           />
         </div>
 
@@ -183,6 +237,8 @@ const EditTripModal = ({ visible, onClose, onSubmit, formData, handleChange, dri
             value={formData.endLocation}
             onChange={handleChange}
             required
+            invalid={!!formErrors.endLocation}
+            feedback={formErrors.endLocation}
           />
         </div>
 
@@ -193,6 +249,8 @@ const EditTripModal = ({ visible, onClose, onSubmit, formData, handleChange, dri
             value={formData.scheduledDate}
             onChange={handleChange}
             required
+            invalid={!!formErrors.scheduledDate}
+            feedback={formErrors.scheduledDate}
           />
         </div>
 
@@ -219,7 +277,6 @@ const DeleteConfirmationModal = ({ visible, onClose, onConfirm }) => (
     <CModalFooter>
       <CButton color="danger" onClick={onConfirm}>Delete</CButton>
       <CButton color="secondary" onClick={onClose}>Cancel</CButton>
-      
     </CModalFooter>
   </CModal>
 );
@@ -236,6 +293,7 @@ const Trips = () => {
     endLocation: "",
     scheduledDate: "",
   });
+  const [formErrors, setFormErrors] = useState({});
   const [alert, setAlert] = useState({ visible: false, message: '', color: '' });
   const [visibleModal, setVisibleModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -246,47 +304,104 @@ const Trips = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [totalTrips, setTotalTrips] = useState(0);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    startLocation: '',
+    endLocation: '',
+    driverId: '',
+    vehicleId: ''
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-    
-      try {
-        const token = localStorage.getItem('token');
-        const [tripsRes, driversRes, vehiclesRes] = await Promise.all([
-          axios.get(`${API_URL}/trips?page=${currentPage}&limit=${itemsPerPage}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`${API_URL}/drivers/all`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`${API_URL}/vehicles`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-        ]);
-        console.log("Trips Data:", tripsRes.data);
-        setTrips(tripsRes.data?.data?.trips || tripsRes.data?.trips || []);
-        setTotalTrips(tripsRes.data?.data?.totalTrips || tripsRes.data?.totalTrips || 0);
-        setDrivers(driversRes.data?.data?.drivers || driversRes.data?.drivers || []);
-        setVehicles(vehiclesRes.data?.data?.vehicles || vehiclesRes.data?.vehicles || []);
-            } catch (error) {
-        console.error('Error fetching data:', error);
-        showAlert(`Error fetching data: ${error.message}`, 'danger');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [currentPage]);
-
+  // Show Alert Utility
   const showAlert = (message, color) => {
     setAlert({ visible: true, message, color });
     setTimeout(() => setAlert({ ...alert, visible: false }), 5000);
   };
 
+  // Memoized fetch functions to prevent unnecessary re-renders
+  const fetchDriversAndVehicles = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const [driversRes, vehiclesRes] = await Promise.all([
+        axios.get(`${API_URL}/drivers/all`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_URL}/vehicles`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      setDrivers(driversRes.data?.data?.drivers || driversRes.data?.drivers || []);
+      setVehicles(vehiclesRes.data?.data?.vehicles || vehiclesRes.data?.vehicles || []);
+    } catch (error) {
+      console.error('Error fetching drivers/vehicles:', error);
+      showAlert('Failed to fetch drivers and vehicles', 'danger');
+    }
+  }, []);
+
+  const fetchTrips = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const queryParams = new URLSearchParams({
+        page: currentPage,
+        limit: itemsPerPage,
+        startLocation: filters.startLocation,
+        endLocation: filters.endLocation,
+        driverId: filters.driverId,
+        vehicleId: filters.vehicleId
+      });
+
+      const tripsRes = await axios.get(`${API_URL}/trips?${queryParams}`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          withCredentials: true 
+        }
+      });
+
+      setTrips(tripsRes.data?.data?.trips || []);
+      setTotalTrips(tripsRes.data?.data?.totalTrips || 0);
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+      showAlert('Failed to fetch trips', 'danger');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, filters]);
+
+  // Consolidated useEffect for data fetching
+  useEffect(() => {
+    fetchDriversAndVehicles();
+    fetchTrips();
+  }, [fetchDriversAndVehicles, fetchTrips]);
+
+  // Enhanced error handling and validation
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear specific error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const applyFilters = () => {
+    setCurrentPage(1);  // Reset to first page when applying filters
+    fetchTrips();
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      startLocation: '',
+      endLocation: '',
+      driverId: '',
+      vehicleId: ''
+    });
+    setCurrentPage(1);
+    fetchTrips();
   };
 
   const handleEditClick = (trip) => {
@@ -303,14 +418,25 @@ const Trips = () => {
 
   const handleSaveTrip = async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    const validationErrors = validateTripForm(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
-      let response;
+      const dataToSend = {
+        ...formData,
+        scheduledDate: new Date(formData.scheduledDate).toISOString()
+      };
 
       if (selectedTrip) {
-        response = await axios.patch(
+        await axios.patch(
           `${API_URL}/trips/${selectedTrip._id}`,
-          formData,
+          dataToSend,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -318,11 +444,10 @@ const Trips = () => {
             },
           }
         );
-        showAlert('Trip updated successfully!', 'success');
       } else {
-        response = await axios.post(
+        await axios.post(
           `${API_URL}/trips`,
-          formData,
+          dataToSend,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -330,14 +455,14 @@ const Trips = () => {
             },
           }
         );
-        showAlert('Trip assigned successfully!', 'success');
       }
 
-      setTrips(trips => selectedTrip ? 
-        trips.map(t => t._id === selectedTrip._id ? response.data.data.trip : t) :
-        [...trips, response.data.data.trip]
-      );
-
+      // Refetch trips after successful save
+      fetchTrips();
+      
+      showAlert(selectedTrip ? 'Trip updated!' : 'Trip assigned!', 'success');
+      
+      // Reset form and modals
       setFormData({
         driver: "",
         vehicle: "",
@@ -348,15 +473,11 @@ const Trips = () => {
       setSelectedTrip(null);
       setVisibleModal(false);
       setShowEditModal(false);
+      setFormErrors({});
     } catch (error) {
       console.error('Save Error:', error);
-      if (error.response?.data?.message) {
-        showAlert(`Error: ${error.response.data.message}`, 'danger');
-      } else if (error.response?.status === 500) {
-        showAlert('Server error. Please try again later.', 'danger');
-      } else {
-        showAlert('An unexpected error occurred.', 'danger');
-      }
+      const errorMessage = error.response?.data?.message || 'An unexpected error occurred';
+      showAlert(errorMessage, 'danger');
     }
   };
 
@@ -366,7 +487,10 @@ const Trips = () => {
       await axios.delete(`${API_URL}/trips/${tripToDelete}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setTrips(trips.filter(trip => trip._id !== tripToDelete));
+      
+      // Refetch trips after deletion
+      fetchTrips();
+      
       showAlert('Trip deleted successfully!', 'success');
     } catch (error) {
       console.error('Delete Error:', error);
@@ -382,16 +506,75 @@ const Trips = () => {
   return (
     <CContainer>
       <CCard className="mb-4">
-        <CCardHeader>
+        <CCardHeader className="d-flex justify-content-between align-items-center">
           <h2 className="h5 mb-0">Fleet Manager - Trips</h2>
-          <CButton 
-            color="primary" 
-            onClick={() => setVisibleModal(true)}
-            className="float-end"
-          >
-            Assign Trip
-          </CButton>
+          <div>
+            <CButton 
+              color="info" 
+              variant="outline" 
+              className="me-2"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <CIcon icon={cilFilter} /> Filters
+            </CButton>
+            <CButton 
+              color="primary" 
+              onClick={() => {
+                setFormData({ driver: "", vehicle: "", startLocation: "", endLocation: "", scheduledDate: "" });  
+                setVisibleModal(true);
+              }}
+            >
+              Assign Trip
+            </CButton>
+          </div>
         </CCardHeader>
+        
+        {/* Filter Section */}
+        {showFilters && (
+          <div className="p-3 bg-light">
+            <div className="row">
+              <div className="col-md-3">
+                <CFormInput 
+                  placeholder="Start Location"
+                  name="startLocation"
+                  value={filters.startLocation}
+                  onChange={handleFilterChange}
+                />
+              </div>
+              <div className="col-md-3">
+                <CFormInput 
+                  placeholder="End Location"
+                  name="endLocation"
+                  value={filters.endLocation}
+                  onChange={handleFilterChange}
+                />
+              </div>
+              <div className="col-md-3">
+                <CFormSelect
+                  name="driverId"
+                  value={filters.driverId}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">All Drivers</option>
+                  {drivers.map(driver => (
+                    <option key={driver._id} value={driver._id}>
+                      {`${driver.user?.firstName} ${driver.user?.lastName}`}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </div>
+              <div className="col-md-3 d-flex">
+                <CButton color="primary" className="me-2" onClick={applyFilters}>
+                  Apply Filters
+                </CButton>
+                <CButton color="secondary" onClick={resetFilters}>
+                  Reset
+                </CButton>
+              </div>
+            </div>
+          </div>
+        )}
+
         <CCardBody>
           {alert.visible && (
             <CAlert color={alert.color} dismissible onClose={() => setAlert({ ...alert, visible: false })}>
@@ -401,13 +584,18 @@ const Trips = () => {
 
           <AssignTripModal
             visible={visibleModal}
-            onClose={() => setVisibleModal(false)}
+            onClose={() => {
+              setVisibleModal(false);
+              setFormData({ driver: "", vehicle: "", startLocation: "", endLocation: "", scheduledDate: "" });
+              setFormErrors({});
+            }}
             onSubmit={handleSaveTrip}
             formData={formData}
             handleChange={handleChange}
             drivers={drivers}
             vehicles={vehicles}
             isLoading={isLoading}
+            formErrors={formErrors}
           />
 
           <EditTripModal
@@ -415,12 +603,15 @@ const Trips = () => {
             onClose={() => {
               setShowEditModal(false);
               setSelectedTrip(null);
+              setFormData({ driver: "", vehicle: "", startLocation: "", endLocation: "", scheduledDate: "" });
+              setFormErrors({});
             }}
             onSubmit={handleSaveTrip}
             formData={formData}
             handleChange={handleChange}
             drivers={drivers}
             vehicles={vehicles}
+            formErrors={formErrors}
           />
 
           <DeleteConfirmationModal
@@ -443,18 +634,26 @@ const Trips = () => {
                     <CTableHeaderCell>Vehicle</CTableHeaderCell>
                     <CTableHeaderCell>Start Location</CTableHeaderCell>
                     <CTableHeaderCell>End Location</CTableHeaderCell>
+                    <CTableHeaderCell>Scheduled Date</CTableHeaderCell>
                     <CTableHeaderCell>Actions</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
                   {trips.map((trip) => (
                     <CTableRow key={trip._id}>
-                      <CTableDataCell>{trip.driver?`${trip.driver.firstName || ''} ${trip.driver.lastName || ''}`.trim() || 'N/A'
-                       : 'No Driver Assigned'}</CTableDataCell>
-                      <CTableDataCell>{trip.vehicle?trip.vehicle.registrationNumber || 'N/A'
-                      : 'N/A'}</CTableDataCell>
+                      <CTableDataCell>
+                        {trip.driver && trip.driver.user
+                          ? `${trip.driver.user.firstName} ${trip.driver.user.lastName}`
+                          : 'No Driver Assigned'}
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        {trip.vehicle ? trip.vehicle.registrationNumber : 'N/A'}
+                      </CTableDataCell>
                       <CTableDataCell>{trip.startLocation}</CTableDataCell>
                       <CTableDataCell>{trip.endLocation}</CTableDataCell>
+                      <CTableDataCell>
+                        {new Date(trip.scheduledDate).toLocaleString()}
+                      </CTableDataCell>
                       <CTableDataCell>
                         <CButton
                           size="sm"

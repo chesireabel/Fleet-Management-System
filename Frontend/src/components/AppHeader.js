@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
+import { fetchNotificationCount } from '../actions/notificationActions.js'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   CContainer,
@@ -33,8 +34,7 @@ const AppHeader = () => {
   const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
 
   const dispatch = useDispatch()
-  const sidebarShow = useSelector((state) => state.sidebarShow)
-
+  const sidebarShow = useSelector((state) => state.sidebar.sidebarShow);
   useEffect(() => {
     document.addEventListener('scroll', () => {
       headerRef.current &&
@@ -42,11 +42,21 @@ const AppHeader = () => {
     })
   }, [])
 
+
+const notificationCount = useSelector(
+  (state) => state.notifications?.count || 0
+);
+  useEffect(() => {
+    dispatch(fetchNotificationCount())  // Dispatch action to fetch notification count
+  }, [dispatch])
+
+
+
   return (
     <CHeader position="sticky" className="mb-4 p-0" ref={headerRef}>
       <CContainer className="border-bottom px-4" fluid>
         <CHeaderToggler
-          onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
+          onClick={() => dispatch({ type: 'SET_SIDEBAR', payload: !sidebarShow })}
           style={{ marginInlineStart: '-14px' }}
         >
           <CIcon icon={cilMenu} size="lg" />
@@ -62,6 +72,9 @@ const AppHeader = () => {
           <CNavItem>
             <CNavLink href="#">
               <CIcon icon={cilBell} size="lg" />
+              {notificationCount > 0 && (
+                <span className="badge bg-danger">{notificationCount}</span>
+              )}
             </CNavLink>
           </CNavItem>
           <CNavItem>

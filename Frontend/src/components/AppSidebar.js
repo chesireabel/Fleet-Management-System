@@ -17,8 +17,8 @@ import navigation from '../_nav'
 
 const AppSidebar = () => {
   const dispatch = useDispatch()
-  const unfoldable = useSelector((state) => state.sidebarUnfoldable)
-  const sidebarShow = useSelector((state) => state.sidebarShow)
+  const unfoldable = useSelector((state) => state.sidebar.sidebarUnfoldable)
+  const sidebarShow = useSelector((state) => state.sidebar.sidebarShow)
 
   return (
     <CSidebar
@@ -28,8 +28,11 @@ const AppSidebar = () => {
       unfoldable={unfoldable}
       visible={sidebarShow}
       onVisibleChange={(visible) => {
-        dispatch({ type: 'set', sidebarShow: visible })
-      }}
+        dispatch({ 
+          type: 'SET_SIDEBAR', 
+          payload: visible 
+        })
+              }}
     >
       <CSidebarHeader className="border-bottom">
         <CSidebarBrand to="/" className="d-flex align-items-center justify-content-center" style={{ textDecoration: 'none' }}>
@@ -66,13 +69,19 @@ const AppSidebar = () => {
         <CCloseButton
           className="d-lg-none"
           dark
-          onClick={() => dispatch({ type: 'set', sidebarShow: false })}
+          onClick={() =>dispatch({ 
+            type: 'SET_SIDEBAR', 
+            payload: false
+          })
+          }
         />
       </CSidebarHeader>
       <AppSidebarNav items={navigation} />
       <CSidebarFooter className="border-top d-none d-lg-flex">
         <CSidebarToggler
-          onClick={() => dispatch({ type: 'set', sidebarUnfoldable: !unfoldable })}
+          onClick={() => dispatch({
+            type: 'TOGGLE_SIDEBAR_UNFOLDABLE'
+          })}
         />
       </CSidebarFooter>
     </CSidebar>
