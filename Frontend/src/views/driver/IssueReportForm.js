@@ -48,6 +48,7 @@ import {
 import CIcon from '@coreui/icons-react';
 
 const API_URL = import.meta.env.VITE_API_URL;
+const TOKEN_KEY = 'driverToken';
 
 const IncidentReportForm = () => {
   const [incidents, setIncidents] = useState([]);
@@ -70,6 +71,20 @@ const IncidentReportForm = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
 
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const userData = localStorage.getItem('userData');
+    
+    if (!token || !userData) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('userData');
+      window.location.href = '/login';
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleChange = (field) => (e) => {
     setFormData(prev => ({ 
       ...prev, 
@@ -78,36 +93,32 @@ const IncidentReportForm = () => {
   };
 
   useEffect(() => {
-    fetchIncidents();
+    const fetchData = async () => {
+      if (!checkAuthStatus()) return;
+      await fetchIncidents();
+    };
+    fetchData();
   }, []);
 
   const fetchIncidents = async () => {
     try {
-      const token = localStorage.getItem('token'); // Get stored auth token
-  
-      if (!token) {
-        console.error('No token found in localStorage');
-        return;
-      }
-  
-      const response = await axios.get(`${API_URL}/incidents/driver-reports`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // Send token in headers
-        },
+      const token = localStorage.getItem(TOKEN_KEY);
+      const response = await axios.get(`${API_URL}/incident-reports/driver-reports`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-
-
-      console.log(response.data.reports);
-  } catch (error) {
-    console.error('Error fetching incidents:', error.response?.data || error.message);
-  }
-};
-  
+      setIncidents(response.data.data);
+    } catch (error) {
+      console.error('Error fetching incidents:', error);
+      setSubmissionStatus('error');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!checkAuthStatus()) return;
 
-    if (!formData.type || !formData.vehicle || !formData.location || !formData.description) {
+    const requiredFields = ['type', 'vehicle', 'location', 'description'];
+    if (requiredFields.some(field => !formData[field])) {
       setSubmissionStatus('validationError');
       return;
     }
@@ -115,52 +126,35 @@ const IncidentReportForm = () => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token'); // Retrieve token
-  
-      if (!token) {
-        console.error('No token found in localStorage');
-        setSubmissionStatus('error');
-        setLoading(false);
-        return;
-      }
+      const token = localStorage.getItem(TOKEN_KEY);
+      const userData = JSON.parse(localStorage.getItem('userData'));
 
-      const decodedToken = JSON.parse(atob(token.split('.')[1]));  // Decode JWT payload
-      const driverId = decodedToken.id;  // Extract driver ID
-  
-      if (!driverId) {
-        console.error('Driver ID missing in token');
-        setSubmissionStatus('error');
-        setLoading(false);
-        return;
-      }
+      const reportData = {
+        ...formData,
+        driverId: userData.id,
+        driverName: `${userData.firstName} ${userData.lastName}`
+      };
 
-      const reportData = { ...formData,driverId }; // Prepare data for submission
-      const response = await axios.post(`${API_URL}/incident-reports`,reportData,{
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await axios.post(`${API_URL}/incident-reports`, reportData, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      console.log("Full Response:", response);
 
-      if (response.status === 201 || response.status === 200){
-      setSuccessMessage(`Incident reported successfully for vehicle ${formData.vehicle} at ${formData.location}`);
-      setSubmissionStatus('success');
-      setFormData({
-        type: '',
-        severity: 'Medium',
-        vehicle: '',
-        location: '',
-        description: '',
-      });
-      setVisibleModal(false);
-      await fetchIncidents();
-      setTimeout(() => setSuccessMessage(''), 5000);
-    }else{
-      console.error("Unexpected response status:", response.status);
-      setSubmissionStatus('error');
-    }
+      if ([200, 201].includes(response.status)) {
+        setSuccessMessage(`Incident reported for ${formData.vehicle} at ${formData.location}`);
+        setSubmissionStatus('success');
+        setFormData({
+          type: '',
+          severity: 'Medium',
+          vehicle: '',
+          location: '',
+          description: '',
+        });
+        setVisibleModal(false);
+        await fetchIncidents();
+        setTimeout(() => setSuccessMessage(''), 5000);
+      }
     } catch (error) {
-      console.error('Error reporting incident:', error.response?.data || error.message);
+      console.error('Error reporting incident:', error);
       setSubmissionStatus('error');
     } finally {
       setLoading(false);
@@ -168,13 +162,17 @@ const IncidentReportForm = () => {
   };
 
   const toggleResolved = async (id, currentStatus) => {
+    if (!checkAuthStatus()) return;
+    
     try {
-      await axios.patch(`${API_URL}/incident-reports/${id}`, { 
-        resolved: !currentStatus 
-      });
+      const token = localStorage.getItem(TOKEN_KEY);
+      await axios.patch(`${API_URL}/incident-reports/${id}`, 
+        { resolved: !currentStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       await fetchIncidents();
     } catch (error) {
-      console.error('Error updating incident:', error.response?.data || error.message);
+      console.error('Error updating incident:', error);
       setSubmissionStatus('error');
     }
   };
@@ -182,7 +180,7 @@ const IncidentReportForm = () => {
   const filteredIncidents = incidents.filter(incident => {
     const searchLower = filters.searchTerm.toLowerCase();
     return (
-      (incident.vehicle.toLowerCase().includes(searchLower) ) &&
+      incident.vehicle.toLowerCase().includes(searchLower) &&
       (filters.type === 'all' || incident.type === filters.type) &&
       (filters.severity === 'all' || incident.severity === filters.severity) &&
       (filters.status === 'all' || 
@@ -191,10 +189,7 @@ const IncidentReportForm = () => {
   });
 
   const handleFilterChange = (name, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const clearFilters = () => {
@@ -235,7 +230,6 @@ const IncidentReportForm = () => {
             <CIcon icon={showFilters ? cilXCircle : cilFilter} className="me-2" />
             {showFilters ? 'Hide Filters' : 'Show Filters'}
           </CButton>
-          
 
           <CButton 
             color="danger" 
@@ -261,7 +255,7 @@ const IncidentReportForm = () => {
               <CCol md={3}>
                 <CInputGroup>
                   <CFormInput
-                    placeholder="Search vehicles/drivers..."
+                    placeholder="Search vehicles..."
                     value={filters.searchTerm}
                     onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
                   />
@@ -370,7 +364,7 @@ const IncidentReportForm = () => {
                     <CTableDataCell>
                       <span className="badge bg-light text-dark border">{incident.vehicle}</span>
                     </CTableDataCell>
-                    <CTableDataCell>{incident.driver || '—'}</CTableDataCell>
+                    <CTableDataCell>{incident.driverName || '—'}</CTableDataCell>
                     <CTableDataCell>
                       <div className="text-truncate" style={{ maxWidth: '200px' }} title={incident.location}>
                         {incident.location}
@@ -583,7 +577,6 @@ const IncidentReportForm = () => {
         }
         .modal-enhance {
           border-radius: 1rem;
-          overflow: hidden;
         }
         .bg-gradient-danger {
           background: linear-gradient(45deg, #e55353, #d63939);

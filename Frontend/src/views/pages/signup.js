@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import {
   CContainer,
   CRow,
@@ -37,6 +38,7 @@ function Signup() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [modalType, setModalType] = useState('success');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -127,76 +129,92 @@ function Signup() {
     }
   };
 
-  return (
-    <CContainer className="d-flex align-items-center justify-content-center vh-100">
-      <CCard style={{ width: '500px' }}>
-        <CCardBody>
-          <h2 className="text-center mb-4">Sign Up</h2>
-          <CForm onSubmit={handleSubmit}>
-            {/* First Name */}
-            <div className="mb-3">
-              <CFormLabel>First Name</CFormLabel>
-              <CFormInput
-                type="text"
-                name="firstName"
-                placeholder="Enter your first name"
-                value={formData.firstName}
-                onChange={handleChange}
-                invalid={!!errors.firstName}
-              />
-              {errors.firstName && <CAlert color="danger">{errors.firstName}</CAlert>}
-            </div>
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
-            {/* Last Name */}
-            <div className="mb-3">
-              <CFormLabel>Last Name</CFormLabel>
-              <CFormInput
-                type="text"
-                name="lastName"
-                placeholder="Enter your last name"
-                value={formData.lastName}
-                onChange={handleChange}
-                invalid={!!errors.lastName}
-              />
-              {errors.lastName && <CAlert color="danger">{errors.lastName}</CAlert>}
+  return (
+    <CContainer className="d-flex align-items-center justify-content-center vh-100 bg-light">
+      <CCard className="shadow-lg border-0" style={{ width: '500px', borderRadius: '15px' }}>
+        <CCardBody className="p-5">
+          <h2 className="text-center mb-4 text-primary">Create Your Account</h2>
+          <CForm onSubmit={handleSubmit}>
+            <div className="row">
+              {/* First Name */}
+              <div className="col-md-6 mb-3">
+                <CFormLabel className="form-label">First Name</CFormLabel>
+                <CFormInput
+                  type="text"
+                  name="firstName"
+                  placeholder="Enter first name"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={`form-control ${errors.firstName ? 'is-invalid' : ''}`}
+                />
+                {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
+              </div>
+
+              {/* Last Name */}
+              <div className="col-md-6 mb-3">
+                <CFormLabel className="form-label">Last Name</CFormLabel>
+                <CFormInput
+                  type="text"
+                  name="lastName"
+                  placeholder="Enter last name"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={`form-control ${errors.lastName ? 'is-invalid' : ''}`}
+                />
+                {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
+              </div>
             </div>
 
             {/* Email */}
             <div className="mb-3">
-              <CFormLabel>Email</CFormLabel>
+              <CFormLabel className="form-label">Email</CFormLabel>
               <CFormInput
                 type="email"
                 name="email"
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={handleChange}
-                invalid={!!errors.email}
+                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
               />
-              {errors.email && <CAlert color="danger">{errors.email}</CAlert>}
+              {errors.email && <div className="invalid-feedback">{errors.email}</div>}
             </div>
 
             {/* Password */}
             <div className="mb-3">
-              <CFormLabel>Password</CFormLabel>
-              <CFormInput
-                type="password"
-                name="password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={handleChange}
-                invalid={!!errors.password}
-              />
-              {errors.password && <CAlert color="danger">{errors.password}</CAlert>}
+              <CFormLabel className="form-label">Password</CFormLabel>
+              <div className="input-group">
+                <CFormInput
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                />
+                <button 
+                  type="button" 
+                  className="btn btn-outline-secondary" 
+                  onClick={togglePasswordVisibility}
+                >
+                  {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                </button>
+                {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+              </div>
+              <small className="text-muted">Password must be at least 8 characters</small>
             </div>
 
             {/* Role */}
             <div className="mb-3">
-              <CFormLabel>Role</CFormLabel>
+              <CFormLabel className="form-label">Role</CFormLabel>
               <CFormSelect
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                invalid={!!errors.role}
+                className={`form-select ${errors.role ? 'is-invalid' : ''}`}
               >
                 <option value="" disabled>Select Role</option>
                 <option value="fleet_manager">Fleet Manager</option>
@@ -205,7 +223,7 @@ function Signup() {
                 <option value="finance_team">Finance Team</option>
                 <option value="senior_management">Senior Management</option>
               </CFormSelect>
-              {errors.role && <CAlert color="danger">{errors.role}</CAlert>}
+              {errors.role && <div className="invalid-feedback">{errors.role}</div>}
             </div>
 
             {/* Terms Checkbox */}
@@ -216,14 +234,14 @@ function Signup() {
                 label="I agree to the Terms and Conditions"
                 checked={formData.agreeToTerms}
                 onChange={handleChange}
-                invalid={!!errors.agreeToTerms}
+                className={errors.agreeToTerms ? 'is-invalid' : ''}
               />
-              {errors.agreeToTerms && <CAlert color="danger">{errors.agreeToTerms}</CAlert>}
+              {errors.agreeToTerms && <div className="invalid-feedback">{errors.agreeToTerms}</div>}
             </div>
 
-            <div className="d-grid">
-              <CButton type="submit" color="primary">
-                Sign Up
+            <div className="d-grid mt-4">
+              <CButton type="submit" color="primary" className="py-2">
+                Create Account
               </CButton>
             </div>
           </CForm>

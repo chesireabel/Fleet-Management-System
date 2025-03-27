@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios'; 
 import { Eye, EyeOff } from 'lucide-react';
@@ -17,9 +17,86 @@ import {
   CLink,
 } from '@coreui/react';
 
+// Centralized Token Management Utility
+const TokenManager = {
+  // Clear all tokens for clean slate
+  clearAllTokens() {
+    const tokensToRemove = [
+      'token', 
+      'driverToken', 
+      'managerToken', 
+      'maintenanceToken', 
+      'userRole', 
+      'userId', 
+      'userData'
+    ];
+    
+    tokensToRemove.forEach(tokenKey => 
+      localStorage.removeItem(tokenKey)
+    );
+  },
+
+  // Set token based on role with more robust checks
+  setToken(role, token) {
+    if (!role || !token) {
+      console.error('Invalid token or role');
+      return false;
+    }
+
+    // Clear previous tokens first
+    this.clearAllTokens();
+
+    // Role-specific token storage
+    const tokenMap = {
+      'driver': 'driverToken',
+      'fleet_manager': 'managerToken',
+      'maintenance_team': 'maintenanceToken',
+      'finance_team': 'financeToken',
+      'senior_management': 'seniorManagementToken'
+    };
+
+    const tokenKey = tokenMap[role];
+    
+    if (!tokenKey) {
+      console.error(`Unsupported role: ${role}`);
+      return false;
+    }
+
+    try {
+      localStorage.setItem(tokenKey, token);
+      localStorage.setItem('userRole', role);
+      return true;
+    } catch (error) {
+      console.error('Token storage failed:', error);
+      return false;
+    }
+  },
+
+  // Get current active token based on role
+  getCurrentToken(role) {
+    const tokenMap = {
+      'driver': 'driverToken',
+      'fleet_manager': 'managerToken',
+      'maintenance_team': 'maintenanceToken',
+      'finance_team': 'financeToken',
+      'senior_management': 'seniorManagementToken'
+    };
+
+    const tokenKey = tokenMap[role];
+    return tokenKey ? localStorage.getItem(tokenKey) : null;
+  },
+
+  // Validate token existence and match with current role
+  validateTokenForRole(role) {
+    const token = this.getCurrentToken(role);
+    const currentRole = localStorage.getItem('userRole');
+    return token && currentRole === role;
+  }
+};
+
 // Centralized configuration
 const CONFIG = {
-  API_URL:import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  API_URL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
   ROUTE_MAP: {
     'fleet_manager': '/dashboard',
     'driver': '/driver',
@@ -46,9 +123,16 @@ function Login() {
     isLoading: false,
     showPassword: false
   });
+  
+  const togglePasswordVisibility = () => {
+    setUiState(prev => ({
+      ...prev,
+      showPassword: !prev.showPassword
+    }));
+  };
 
-  // Load remembered email from localStorage
-  React.useEffect(() => {
+  // Memoized email loading to prevent unnecessary re-renders
+  const loadRememberedEmail = useCallback(() => {
     const rememberedEmail = localStorage.getItem('rememberedEmail');
     if (rememberedEmail) {
       setFormData(prev => ({
@@ -58,6 +142,11 @@ function Login() {
       }));
     }
   }, []);
+
+  // Use useEffect with memoized callback
+  useEffect(() => {
+    loadRememberedEmail();
+  }, [loadRememberedEmail]);
 
   // Enhanced input change handler
   const handleChange = (e) => {
@@ -98,8 +187,6 @@ function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
-  
-
   // Handle form submission with improved error handling
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -107,7 +194,7 @@ function Login() {
     // Reset previous states
     setUiState(prev => ({ 
       ...prev, 
-      loginError:'', 
+      loginError: '', 
       isLoading: true 
     }));
 
@@ -124,86 +211,58 @@ function Login() {
           email: formData.email,
           password: formData.password
         });
-  
- 
-        const { 
-          token, 
-          data = {}, 
-          user = {}
-        } = response.data;
 
-        console.log('Full Backend Response:', response.data);
-        console.log('Response Data:', JSON.stringify(response.data, null, 2));
-
-
-        const driverId = user._id || data.user?._id;
-
-
-
-         // Log specific fields
-      console.log('Token:', token);
-      console.log('Data Object:', data);
-      console.log('User Object:', user);
-      console.log('Driver ID:', driverId);
-
+        const { token, data = {}, user = {}} = response.data;
         
+        // Extract user role from response
+        const userRole = user.role || data.user?.role || "";
+        if (!userRole) {
+          throw new Error("User role not found in response");
+        }
 
-        // Save the token and user info
-       
+        // Use centralized token management
+        const tokenSet = TokenManager.setToken(userRole, token);
         
-        // Multiple approaches to store driver ID
-        if (driverId) {
-          localStorage.setItem('driverId', driverId);
-        }
-        if (user.driverId) {
-          localStorage.setItem('driverId', user.driverId);
-        }
-        if (data.user?.driverId) {
-          localStorage.setItem('driverId', data.user.driverId);
+        if (!tokenSet) {
+          throw new Error("Token storage failed");
         }
 
-        localStorage.setItem('token', token || '');
-        localStorage.setItem('userRole', user.role || data.user?.role || '');
+        // Store user metadata
+        const userId = user.id || user._id || data.user?.id || data.user?._id;
+        if (!userId) {
+          throw new Error("User ID not found in response");
+        }
 
-              // Store full user data for inspection
-      localStorage.setItem('userData', JSON.stringify({
-        ...user,
-        ...data.user
-      }));
-     
-    //  localStorage.clear();
-    console.log('Stored Driver ID:', localStorage.getItem('driverId'));
-      console.log('Stored User Data:', localStorage.getItem('userData'));
+        localStorage.setItem('userId', userId);
+        
+        try {
+          localStorage.setItem('userData', JSON.stringify({
+            ...user,
+            ...data.user
+          }));
+        } catch (storageError) {
+          console.error('Error storing user data:', storageError);
+        }
 
-      const userRole = localStorage.getItem('userRole') || ''; 
-
-        // Navigate based on role, with fallback
         const destinationRoute = CONFIG.ROUTE_MAP[userRole] || CONFIG.ROUTE_MAP.default;
-        
         navigate(destinationRoute);
+
       } catch (error) {
-        console.error("Login Error:", error); 
-         const errorMessage = error.response?.data?.message || 
-        error.message || 
-        'An unexpected error occurred. Please try again.';
+        console.error("Login Error:", error);
+        const errorMessage = 
+          error.response?.data?.message || 
+          error.message || 
+          'An unexpected error occurred. Please try again.';
         
-        setUiState(prev => ({ 
-          ...prev, 
-          loginError: errorMessage,
-          isLoading: false 
-        }));
+        if (error.response?.status === 400 && error.response?.data?.message.includes('jwt malformed')) {
+          setUiState(prev => ({ ...prev, loginError: 'Invalid token. Please log in again.', isLoading: false }));
+        } else {
+          setUiState(prev => ({ ...prev, loginError: errorMessage, isLoading: false }));
+        }
       }
     } else {
       setUiState(prev => ({ ...prev, isLoading: false }));
     }
-  };
-
-  // Toggle password visibility
-  const togglePasswordVisibility = () => {
-    setUiState(prev => ({ 
-      ...prev, 
-      showPassword: !prev.showPassword 
-    }));
   };
 
   return (
@@ -218,48 +277,65 @@ function Login() {
                     <h1>Login</h1>
                     <p className="text-medium-emphasis">Sign In to your account</p>
 
-                    {/* Email Input */}
+                    {/* Email Input with Enhanced Accessibility */}
                     <div className="mb-3">
-                      <CFormLabel>Email</CFormLabel>
+                      <CFormLabel htmlFor="email">Email</CFormLabel>
                       <CFormInput
+                        id="email"
                         type="email"
                         name="email"
                         placeholder="Enter your email"
                         value={formData.email}
                         onChange={handleChange}
                         invalid={!!uiState.errors.email}
+                        aria-describedby="emailError"
                       />
                       {uiState.errors.email && (
-                        <div className="text-danger">{uiState.errors.email}</div>
+                        <div 
+                          id="emailError" 
+                          className="text-danger" 
+                          role="alert"
+                        >
+                          {uiState.errors.email}
+                        </div>
                       )}
                     </div>
 
-                    {/* Password Input with Visibility Toggle */}
+                    {/* Password Input with Visibility Toggle and Improved Accessibility */}
                     <div className="mb-3">
-                      <CFormLabel>Password</CFormLabel>
+                      <CFormLabel htmlFor="password">Password</CFormLabel>
                       <div className="position-relative">
                         <CFormInput
+                          id="password"
                           type={uiState.showPassword ? "text" : "password"}
                           name="password"
                           placeholder="Enter your password"
                           value={formData.password}
                           onChange={handleChange}
                           invalid={!!uiState.errors.password}
+                          aria-describedby="passwordError"
                         />
                         <button
                           type="button"
                           className="position-absolute end-0 top-50 translate-middle-y me-2 btn btn-link"
                           onClick={togglePasswordVisibility}
+                          aria-label={uiState.showPassword ? "Hide password" : "Show password"}
                         >
                           {uiState.showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </button>
                       </div>
                       {uiState.errors.password && (
-                        <div className="text-danger">{uiState.errors.password}</div>
+                        <div 
+                          id="passwordError" 
+                          className="text-danger" 
+                          role="alert"
+                        >
+                          {uiState.errors.password}
+                        </div>
                       )}
                     </div>
 
-                    {/* Remember Me Checkbox */}
+                    {/* Remember Me Checkbox with Improved Accessibility */}
                     <div className="mb-3 form-check">
                       <input
                         type="checkbox"
@@ -269,7 +345,10 @@ function Login() {
                         checked={formData.rememberMe}
                         onChange={handleChange}
                       />
-                      <label className="form-check-label" htmlFor="rememberMe">
+                      <label 
+                        className="form-check-label" 
+                        htmlFor="rememberMe"
+                      >
                         Remember me
                       </label>
                     </div>
@@ -282,20 +361,29 @@ function Login() {
                           color="primary" 
                           className="px-4"
                           disabled={uiState.isLoading}
+                          aria-busy={uiState.isLoading}
                         >
                           {uiState.isLoading ? 'Logging in...' : 'Login'}
                         </CButton>
                       </CCol>
                       <CCol xs={6} className="text-end">
-                        <CLink href="/forgot-password" className="text-decoration-none">
+                        <CLink 
+                          href="/forgot-password" 
+                          className="text-decoration-none"
+                        >
                           Forgot password?
                         </CLink>
                       </CCol>
                     </CRow>
 
-                    {/* Error Handling */}
+                    {/* Error Handling with Improved Accessibility */}
                     {uiState.loginError && (
-                      <CAlert color="danger" className="mt-3">
+                      <CAlert 
+                        color="danger" 
+                        className="mt-3"
+                        role="alert"
+                        aria-live="assertive"
+                      >
                         {uiState.loginError}
                       </CAlert>
                     )}
@@ -304,13 +392,20 @@ function Login() {
               </CCard>
 
               {/* Signup Section */}
-              <CCard className="text-white bg-primary py-5" style={{ width: '44%' }}>
+              <CCard 
+                className="text-white bg-primary py-5" 
+                style={{ width: '44%' }}
+              >
                 <CCardBody className="text-center">
                   <div>
                     <h2>Welcome to AFA</h2>
                     <p>Don't have an account?</p>
                     <Link to='/signup'>
-                      <CButton color="light" variant="outline" className="mt-3">
+                      <CButton 
+                        color="light" 
+                        variant="outline" 
+                        className="mt-3"
+                      >
                         Sign Up
                       </CButton>
                     </Link>
@@ -326,3 +421,6 @@ function Login() {
 }
 
 export default Login;
+
+// Recommended use in protected routes or components
+export { TokenManager };

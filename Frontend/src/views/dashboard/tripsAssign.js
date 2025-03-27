@@ -33,7 +33,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 const validateTripForm = (formData) => {
   const errors = {};
   
-  if (!formData.driver) errors.driver = "Driver is required";
+  if (!formData.user) errors.user = "User(Driver) is required";
   if (!formData.vehicle) errors.vehicle = "Vehicle is required";
   if (!formData.startLocation.trim()) errors.startLocation = "Start location is required";
   if (!formData.endLocation.trim()) errors.endLocation = "End location is required";
@@ -68,21 +68,21 @@ const AssignTripModal = ({
       <CForm onSubmit={onSubmit}>
         <div className="mb-3">
           <CFormSelect
-            name="driver"
-            value={formData.driver}
+            name="user"
+            value={formData.user}
             onChange={handleChange}
             required
             disabled={isLoading}
-            invalid={!!formErrors.driver}
-            feedback={formErrors.driver}
+            invalid={!!formErrors.user}
+            feedback={formErrors.user}
           >
             <option value="">Select Driver</option>
             {isLoading ? (
               <option disabled>Loading drivers...</option>
             ) : (
               drivers.map((driver) => (
-                <option key={driver._id} value={driver._id}>
-                  {`${driver.user?.firstName} ${driver.user?.lastName}`}
+               <option key={driver._id} value={driver.user?._id}>
+                    {`${driver.user?.firstName} ${driver.user?.lastName}`}
                 </option>
               ))
             )}
@@ -182,16 +182,16 @@ const EditTripModal = ({
       <CForm onSubmit={onSubmit}>
         <div className="mb-3">
           <CFormSelect
-            name="driver"
-            value={formData.driver}
+            name="user"
+            value={formData.user}
             onChange={handleChange}
             required
-            invalid={!!formErrors.driver}
-            feedback={formErrors.driver}
+            invalid={!!formErrors.user}
+            feedback={formErrors.user}
           >
             <option value="">Select Driver</option>
             {drivers.map((driver) => (
-              <option key={driver._id} value={driver._id}>
+              <option key={driver._id} value={driver.user?._id}>
                 {`${driver.user?.firstName} ${driver.user?.lastName}`}
               </option>
             ))}
@@ -287,7 +287,7 @@ const Trips = () => {
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [formData, setFormData] = useState({
-    driver: "",
+    user: "",
     vehicle: "",
     startLocation: "",
     endLocation: "",
@@ -309,7 +309,7 @@ const Trips = () => {
   const [filters, setFilters] = useState({
     startLocation: '',
     endLocation: '',
-    driverId: '',
+   userId: '',
     vehicleId: ''
   });
   const [showFilters, setShowFilters] = useState(false);
@@ -345,7 +345,7 @@ const Trips = () => {
         limit: itemsPerPage,
         startLocation: filters.startLocation,
         endLocation: filters.endLocation,
-        driverId: filters.driverId,
+        userId: filters.userId,
         vehicleId: filters.vehicleId
       });
 
@@ -397,7 +397,7 @@ const Trips = () => {
     setFilters({
       startLocation: '',
       endLocation: '',
-      driverId: '',
+      userId: '',
       vehicleId: ''
     });
     setCurrentPage(1);
@@ -405,13 +405,16 @@ const Trips = () => {
   };
 
   const handleEditClick = (trip) => {
+    console.log("Selected Trip:", trip);
     setSelectedTrip(trip);
     setFormData({
-      driver: trip.driver?._id,
-      vehicle: trip.vehicle?._id,
-      startLocation: trip.startLocation,
-      endLocation: trip.endLocation,
-      scheduledDate: new Date(trip.scheduledDate).toISOString().slice(0, 16),
+      driver: trip.user?._id || "",
+      vehicle: trip.vehicle?._id || "",
+      startLocation: trip.startLocation || "",
+      endLocation: trip.endLocation || "",
+      scheduledDate: trip.scheduledDate
+        ? new Date(trip.scheduledDate).toISOString().slice(0, 16)
+        : "",
     });
     setShowEditModal(true);
   };
@@ -419,6 +422,9 @@ const Trips = () => {
   const handleSaveTrip = async (e) => {
     e.preventDefault();
     
+    
+
+
     // Validate form before submission
     const validationErrors = validateTripForm(formData);
     if (Object.keys(validationErrors).length > 0) {
@@ -433,8 +439,12 @@ const Trips = () => {
         scheduledDate: new Date(formData.scheduledDate).toISOString()
       };
 
+      console.log('API URL:', API_URL);  // Log the API URL
+      console.log('Request Data:', dataToSend);  // Log the data being sent
+  
+
       if (selectedTrip) {
-        await axios.patch(
+        const updateResponse = await axios.patch(
           `${API_URL}/trips/${selectedTrip._id}`,
           dataToSend,
           {
@@ -444,8 +454,9 @@ const Trips = () => {
             },
           }
         );
+        console.log('Update Response:', updateResponse); 
       } else {
-        await axios.post(
+        const createResponse = await axios.post(
           `${API_URL}/trips`,
           dataToSend,
           {
@@ -455,6 +466,7 @@ const Trips = () => {
             },
           }
         );
+        console.log('Create Response:', createResponse); 
       }
 
       // Refetch trips after successful save
@@ -464,7 +476,7 @@ const Trips = () => {
       
       // Reset form and modals
       setFormData({
-        driver: "",
+        user: "",
         vehicle: "",
         startLocation: "",
         endLocation: "",
@@ -642,9 +654,9 @@ const Trips = () => {
                   {trips.map((trip) => (
                     <CTableRow key={trip._id}>
                       <CTableDataCell>
-                        {trip.driver && trip.driver.user
-                          ? `${trip.driver.user.firstName} ${trip.driver.user.lastName}`
-                          : 'No Driver Assigned'}
+                        
+                         { `${trip?.user?.firstName} ${trip?.user?.lastName}`}
+                         
                       </CTableDataCell>
                       <CTableDataCell>
                         {trip.vehicle ? trip.vehicle.registrationNumber : 'N/A'}
