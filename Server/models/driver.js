@@ -63,13 +63,6 @@ const driverSchema = new mongoose.Schema(
       immutable: true,
     },
 
-    performanceMetrics: {
-      totalTrips: { type: Number, default: 0 },
-      totalDistance: { type: Number, default: 0 },
-      totalFuelConsumed: { type: Number, default: 0 },
-      averageSpeed: { type: Number, default: 0 },
-      safetyScore: { type: Number, default: 100 },
-    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt

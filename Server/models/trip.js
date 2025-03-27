@@ -2,7 +2,7 @@ import mongoose, { Schema, model } from 'mongoose';
 
 const tripSchema = new Schema({
   vehicle: { type: Schema.Types.ObjectId, ref: 'Vehicle', required: true },
-  driver: { type: Schema.Types.ObjectId, ref: 'Driver', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User",required: true  },
   startLocation: { type: String, required: true },
   endLocation: { type: String, required: true },
   scheduledDate: { type: Date, required: true, validate: {
@@ -37,8 +37,8 @@ const tripSchema = new Schema({
   },
   tripStatus: {
     type: String,
-    enum: ['Completed', 'In Progress', 'Cancelled'],
-    default: 'In Progress',
+    enum: ['Completed', 'Pending', 'Cancelled'],
+    default: 'Pending',
   },
 }, {
   timestamps: true,
@@ -48,9 +48,9 @@ const tripSchema = new Schema({
 
 // Indexes for optimized queries
 tripSchema.index({ vehicle: 1 });
-tripSchema.index({ driver: 1 });
+tripSchema.index({ user: 1 });
 tripSchema.index({ startTime: 1 });
-tripSchema.index({ vehicle: 1, driver: 1 }); // Compound index
+tripSchema.index({ vehicle: 1, user: 1 }); // Compound index
 
 // Virtual for trip duration
 tripSchema.virtual('duration').get(function () {
@@ -67,22 +67,22 @@ tripSchema.pre('save', function (next) {
 
 tripSchema.pre('save', async function (next) {
   const Vehicle = mongoose.model('Vehicle');
-  const Driver = mongoose.model('Driver');
+  const User = mongoose.model('User');
 
   if (!mongoose.Types.ObjectId.isValid(this.vehicle)) {
     return next(new Error('Invalid vehicle ID format.'));
   }
-  if (!mongoose.Types.ObjectId.isValid(this.driver)) {
-    return next(new Error('Invalid driver ID format.'));
+  if (!mongoose.Types.ObjectId.isValid(this.user)) {
+    return next(new Error('Invalid User( driver) ID format.'));
   }
 
-  const [vehicleExists, driverExists] = await Promise.all([
+  const [vehicleExists,userExists] = await Promise.all([
     Vehicle.exists({ _id: this.vehicle }),
-    Driver.exists({ _id: this.driver }),
+    User.exists({ _id: this.user }),
   ]);
 
   if (!vehicleExists) return next(new Error('Vehicle ID not found.'));
-  if (!driverExists) return next(new Error('Driver ID not found.'));
+  if (!userExists) return next(new Error('User ID not found.'));
 
   next();
 });

@@ -50,6 +50,13 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  performanceMetrics: {
+    totalTrips: { type: Number, default: 0 },
+    totalDistance: { type: Number, default: 0 },
+    totalFuelConsumed: { type: Number, default: 0 },
+    averageSpeed: { type: Number, default: 0 },
+    safetyScore: { type: Number, default: 100 },
+  },
 });
 
 // Middleware to check for existing email before saving

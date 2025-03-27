@@ -25,11 +25,17 @@ export const createIncidentReport = async (req, res) => {
       createdBy: driverId,
     });
 
+    console.log("Saving report:", newReport); //
+
     // Save the new report to the database
     await newReport.save();
 
+    const savedReport = await IncidentReport.findById(newReport._id);
+    console.log("Saved report in DB:", savedReport);
+
     // Respond with success
     res.status(201).json({ message: 'Incident report created successfully', data: newReport });
+
 
   } catch (error) {
     console.error('Error creating incident report:', error);
@@ -46,14 +52,15 @@ export const getDriverIncidentReports = async (req, res) => {
       if (!driverId) {
         return res.status(400).json({ message: 'Driver ID is required' });
       }
-  
+      console.log("Driver ID from request:", req.user.id);
       // Fetch unresolved incidents created by the specific driver
       const reports = await IncidentReport.find({ createdBy: driverId, resolved: false }).sort({ createdAt: -1 });
+      console.log("Fetched Reports:", reports);
   
   
       res.status(200).json({
         message: 'Incident reports fetched successfully.',
-        notifications,
+        data: reports,
       });
   
     } catch (error) {

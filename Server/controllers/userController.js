@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
+import { v4 as uuidv4 } from 'uuid';
 
 // Input validation rules for user registration
 export const validateUserRegistration = [
@@ -56,11 +57,10 @@ export const registerUser = async (req, res) => {
 
         // Generate JWT token
         const token = jwt.sign(
-            { id: newUser._id, role: newUser.role },
+            { id: newUser._id.toString(), role: newUser.role, unique: uuidv4() },  // 👈 Forces uniqueness
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
-
         // Remove sensitive data from response
         newUser.password = undefined;
 
@@ -109,13 +109,22 @@ export const loginUser = async (req, res) => {
             });
         }
 
-        // Generate JWT token
-        const token = jwt.sign(
-            { id: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
-        );
 
+        const payload = {
+            id: user._id.toString(),
+            role: user.role,
+            iat: Math.floor(Date.now() / 1000),  // Issue time (forces uniqueness)
+            unique: uuidv4()  // Random unique ID
+        };
+        
+        console.log("JWT Payload before signing:", payload);
+        
+        // Generate JWT token
+        const token = jwt.sign(payload, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRES_IN
+        });
+        
+        console.log(`Generated Token for ${user.email}: ${token}`);
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
         console.log('Decoded Token:', decodedToken);
 
@@ -127,7 +136,13 @@ export const loginUser = async (req, res) => {
             token,
             role: user.role, // Include the role in the response
             data: {
-                user,
+                user:{
+                    id: user._id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    email: user.email,
+                    role: user.role,
+                },
             },
         });
     } catch (error) {

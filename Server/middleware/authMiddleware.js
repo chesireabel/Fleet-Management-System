@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 
 // Authenticate Middleware
 export const authenticate = (req, res, next) => {
+  console.log('Request Headers:', req.headers);  
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     console.log(`Received Token: ${token}`);

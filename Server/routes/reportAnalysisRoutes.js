@@ -19,7 +19,7 @@ router.get('/drivers/summary', getDriverSummary);
 router.get('/maintenance', getAllMaintenanceReports);
 
 // Trip reports routes
-router.get('/trips', getAllTripsReport);
+router.get('/trips/report', getAllTripsReport);
 router.get('/trips/summary', getTripSummary);
 
 // Vehicle reports routes
